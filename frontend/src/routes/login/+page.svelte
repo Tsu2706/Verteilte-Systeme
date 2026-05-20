@@ -1,24 +1,39 @@
+<svelte:options runes={false} />
+
 <script lang="ts">
+  import { loginUser, registerUser } from "$lib/api";
+
   let username = "";
+  let email = "";
   let password = "";
   let message = "";
 
-  function login() {
-    if (!username || !password) {
-      message = "Bitte Benutzername und Passwort eingeben.";
-      return;
-    }
+  async function login() {
+    try {
+      if (!username || !password) {
+        message = "Bitte Benutzername und Passwort eingeben.";
+        return;
+      }
 
-    message = `Login für ${username} wurde ausgeführt.`;
+      await loginUser(username, password);
+      message = "Login erfolgreich.";
+    } catch {
+      message = "Login fehlgeschlagen.";
+    }
   }
 
-  function register() {
-    if (!username || !password) {
-      message = "Bitte Benutzername und Passwort eingeben.";
-      return;
-    }
+  async function register() {
+    try {
+      if (!username || !email || !password) {
+        message = "Bitte Benutzername, E-Mail und Passwort eingeben.";
+        return;
+      }
 
-    message = `Registrierung für ${username} wurde ausgeführt.`;
+      await registerUser(username, email, password);
+      message = "Registrierung erfolgreich. Du kannst dich jetzt anmelden.";
+    } catch {
+      message = "Registrierung fehlgeschlagen.";
+    }
   }
 </script>
 
@@ -28,20 +43,13 @@
     <p>Melde dich an oder registriere dich, um Rezepte hochzuladen und zu bewerten.</p>
 
     <label for="username">Benutzername</label>
-    <input
-      id="username"
-      type="text"
-      bind:value={username}
-      placeholder="Benutzername eingeben"
-    />
+    <input id="username" type="text" bind:value={username} placeholder="Benutzername eingeben" />
+
+    <label for="email">E-Mail</label>
+    <input id="email" type="email" bind:value={email} placeholder="E-Mail eingeben" />
 
     <label for="password">Passwort</label>
-    <input
-      id="password"
-      type="password"
-      bind:value={password}
-      placeholder="Passwort eingeben"
-    />
+    <input id="password" type="password" bind:value={password} placeholder="Passwort eingeben" />
 
     <div class="button-row">
       <button on:click={login}>Anmelden</button>

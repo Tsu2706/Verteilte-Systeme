@@ -1,6 +1,10 @@
+<svelte:options runes={false} />
+
 <script lang="ts">
   import { page } from "$app/stores";
   import { getRecipe, rateRecipe } from "$lib/api";
+
+  const stars: number[] = [1, 2, 3, 4, 5];
 
   let recipe: any = null;
   let loading = true;
@@ -8,12 +12,15 @@
   let selectedRating = 0;
   let ratingMessage = "";
 
-  $: recipeId = $page.params.id;
+  $: recipeId = $page.params.id ?? "";
 
-  async function loadRecipe() {
+  async function loadRecipe(id: string) {
+    if (!id) return;
+
     try {
       loading = true;
-      recipe = await getRecipe(recipeId);
+      error = "";
+      recipe = await getRecipe(id);
     } catch {
       error = "Rezept konnte nicht geladen werden.";
     } finally {
@@ -22,6 +29,8 @@
   }
 
   async function saveRating(rating: number) {
+    if (!recipeId) return;
+
     try {
       selectedRating = rating;
       await rateRecipe(recipeId, rating);
@@ -32,7 +41,7 @@
   }
 
   $: if (recipeId) {
-    loadRecipe();
+    loadRecipe(recipeId);
   }
 </script>
 
@@ -73,15 +82,11 @@
         <h2>Bewertung</h2>
 
         <div class="stars">
-          {#each [1, 2, 3, 4, 5] as star}
-            <button
-              class:active={star <= selectedRating}
-              on:click={() => saveRating(star)}
-              aria-label={`${star} Sterne`}
-            >
-              ★
-            </button>
-          {/each}
+            <button class:active={1 <= selectedRating} on:click={() => saveRating(1)} aria-label="1 Stern">★</button>
+            <button class:active={2 <= selectedRating} on:click={() => saveRating(2)} aria-label="2 Sterne">★</button>
+            <button class:active={3 <= selectedRating} on:click={() => saveRating(3)} aria-label="3 Sterne">★</button>
+            <button class:active={4 <= selectedRating} on:click={() => saveRating(4)} aria-label="4 Sterne">★</button>
+            <button class:active={5 <= selectedRating} on:click={() => saveRating(5)} aria-label="5 Sterne">★</button>
         </div>
 
         {#if ratingMessage}
