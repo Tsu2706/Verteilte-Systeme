@@ -2,6 +2,7 @@ from sqlalchemy import Column, Integer, String, ForeignKey, Boolean, DateTime, J
 from database import Base
 from sqlalchemy.sql import func
 from sqlalchemy import CheckConstraint
+from sqlalchemy import UniqueConstraint
 
 class User(Base):
     """Benutzertabelle – hier könnt ihr weitere Felder ergänzen."""
@@ -50,4 +51,5 @@ class Rating(Base):
     rating=Column(Integer,nullable=False)
     __table_args__=(
         CheckConstraint("rating >= 1 AND rating <= 5",name="rating_range"),
+        UniqueConstraint("user_id", "recipe_id", name="unique_user_recipe_rating"),
     )

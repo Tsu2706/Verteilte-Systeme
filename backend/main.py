@@ -5,6 +5,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
+from models import Recipe, User
+from schemas import RecipeCreate, RecipeResponse
+from database import SessionLocal
+
 from auth import (
     DUMMY_HASH,
     create_access_token,
@@ -17,10 +21,14 @@ from models import User
 from schemas import Token, UserRegister, UserResponse
 
 # Tabellen anlegen (falls noch nicht vorhanden)
-Base.metadata.create_all(bind=engine)
+# Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Mein Projekt", version="0.1.0")
 
+# option to make it safer
+@app.on_event("startup")
+def startup():
+    Base.metadata.create_all(bind=engine)
 # ---------------------------------------------------------------------------
 # Health Check
 # ---------------------------------------------------------------------------
@@ -91,3 +99,100 @@ def get_profile(
 #     db.commit()
 #     db.refresh(item)
 #     return item
+
+"""
+@app.get("/recipes")
+def get_recipes(
+    db: Session = Depends(get_db),
+    current_username: str | None = Depends(get_current_user)
+):
+    query = db.query(Recipe)
+
+    if current_username:
+        user = db.query(User).filter(User.username == current_username).first()
+
+        # public + private
+        return query.filter(
+            (Recipe.is_public == True) |
+            (Recipe.user_id == user.id)
+        ).all()
+    # nur public
+    return query.filter(Recipe.is_public == True).all()
+
+"""
+
+@app.get("/recipes")
+def get_recipes(db: Session = Depends(get_db)):
+    return db.query(Recipe).filter(Recipe.is_public == True).all()
+
+"""
+@app.post("/recipes", response_model=RecipeResponse)
+def create_recipe(
+    data: RecipeCreate,
+    db: Session = Depends(get_db),
+    current_username: str = Depends(get_current_user)
+):
+    # get user
+    user = db.query(User).filter(User.username == current_username).first()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # build recipe
+    recipe = Recipe(
+        title=data.title,
+        description=data.description,
+        ingredients=[i.model_dump() for i in data.ingredients],
+        steps=data.steps,
+        is_public=data.is_public,
+        user_id=user.id
+    )
+
+    # save db
+    db.add(recipe)
+    db.commit()
+    db.refresh(recipe)
+
+    return recipe
+"""
+@app.post("/recipes", response_model=RecipeResponse)
+def create_recipe(
+    data: RecipeCreate,
+    db: Session = Depends(get_db)
+):
+    user = db.query(User).filter(User.username == "testuser").first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Dummy user not found")
+
+    recipe = Recipe(
+        title=data.title,
+        description=data.description,
+        ingredients=[i.model_dump() for i in data.ingredients],
+        steps=data.steps,
+        is_public=data.is_public,
+        user_id=user.id
+    )
+
+    db.add(recipe)
+    db.commit()
+    db.refresh(recipe)
+
+    return recipe
+
+# dummy user
+@app.on_event("startup")
+def create_dummy_user():
+    db = SessionLocal()
+
+    user = db.query(User).filter(User.username == "testuser").first()
+
+    if not user:
+        user = User(
+            username="testuser",
+            email="test@test.com",
+            hashed_password="dummy"
+        )
+        db.add(user)
+        db.commit()
+
+    db.close()
