@@ -19,7 +19,8 @@ class Recipe(Base):
     __tablename__="recipes"
 
     id=Column(Integer,primary_key=True,index=True)
-    user_id=Column(Integer,ForeignKey("users.id"),nullable=False)
+    # user_id=Column(Integer,ForeignKey("users.id"),nullable=False)
+    user_id = Column(Integer, nullable=True)
     title=Column(String(200),nullable=False)
     description=Column(String(200))
     ingredients=Column(JSON,nullable=False)
