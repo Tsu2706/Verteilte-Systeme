@@ -62,7 +62,7 @@ Die Swagger UI unter `http://localhost:8000/docs` hat einen eingebauten **Author
 2. Einloggen: Authorize-Button klicken → username + password eingeben
 3. Geschützte Endpoints wie `GET /my-profile` aufrufen
 
-###########################################################################################################
+########################################################
 Aktueller Stand backend
 RECIPES
 - Rezepte erstellen
@@ -84,4 +84,4 @@ SEARCH / FILTER
 RATINGS
 - Bewertung von Rezepten (1–5)
 - Rating erstellen
-###########################################################################################################
+########################################################
