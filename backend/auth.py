@@ -46,10 +46,10 @@ def create_access_token(username: str) -> str:
 async def get_current_user(
     token: Annotated[str, Depends(oauth2_scheme)],
 ) -> str:
-    """
+    
     Dependency: Validiert den Bearer-Token und gibt den Benutzernamen zurück.
     Wirft HTTP 401, wenn der Token ungültig oder abgelaufen ist.
-    """
+    
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Ungültige Anmeldedaten",
