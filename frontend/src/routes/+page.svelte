@@ -30,7 +30,11 @@
     </div>
 
     <div class="cookie-card">
-      <div class="cookie">🍪</div>
+      <img
+       src="/images/portrait.png"
+       alt="SmartCookies Team"
+       class="team-image"
+      />
       <h2>Smart geplant. Einfach gekocht.</h2>
       <p>Mit SmartCookies findest du schneller das passende Rezept für deinen Tag.</p>
     </div>
@@ -82,6 +86,17 @@
     transform: translateY(1px);
     margin-left: -3px;
     margin-right: -3px;
+  }
+
+  .team-image {
+    width: 100%;
+    max-width: 420px;
+    height: auto;
+    object-fit: contain;
+    margin-bottom: 32px;
+
+    border-radius: 28px;
+    filter: drop-shadow(0 18px 28px rgba(59, 36, 20, 0.18));
   }
 
   .hero {
@@ -180,7 +195,7 @@
   }
 
   .cookie-card h2 {
-    color: #4a2c1a;
+    color: #8b552b;
     font-size: 30px;
     line-height: 1.1;
     margin: 0 0 14px;
