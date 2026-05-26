@@ -2,18 +2,19 @@
   <a href="/" class="brand-link">🍪 SmartCookies</a>
   <section class="auth-card">
     <h1>SmartCookies</h1>
-    <p>Melde dich an, um deine Rezepte zu verwalten.</p>
+    <p>Registriere dich, um Rezepte hochzuladen und zu bewerten.</p>
 
     <form>
       <label for="username">Benutzername</label>
       <input id="username" type="text" placeholder="Benutzername eingeben" />
 
+      <label for="email">E-Mail</label>
+      <input id="email" type="email" placeholder="E-Mail eingeben" />
+
       <label for="password">Passwort</label>
       <input id="password" type="password" placeholder="Passwort eingeben" />
 
-      <button type="submit" class="primary">Anmelden</button>
-
-      <a href="/register" class="secondary">Registrieren</a>
+      <button type="submit" class="primary">Registrieren</button>
     </form>
   </section>
 </main>
@@ -89,30 +90,15 @@
     font-size: 18px;
   }
 
-  .primary,
-  .secondary {
+  .primary {
     height: 54px;
     border-radius: 14px;
     font-size: 20px;
     font-weight: 800;
     margin-top: 18px;
     cursor: pointer;
-    text-align: center;
-    text-decoration: none;
-  }
-
-  .primary {
     background: #8b552b;
     color: white;
     border: none;
-  }
-
-  .secondary {
-    background: #e8d8c2;
-    color: #2b2118;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-top: 4px;
   }
 </style>
