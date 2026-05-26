@@ -1,7 +1,10 @@
 <main class="auth-page">
-  <a href="/" class="brand-link">🍪 SmartCookies</a>
+  <a href="/" class="brand-link" aria-label="Zur Startseite">
+    SmartC<span class="cookie-o">🍪</span><span class="cookie-o">🍪</span>kies
+  </a>
+
   <section class="auth-card">
-    <h1>SmartCookies</h1>
+    <h1>Anmelden</h1>
     <p>Melde dich an, um deine Rezepte zu verwalten.</p>
 
     <form>
@@ -12,7 +15,6 @@
       <input id="password" type="password" placeholder="Passwort eingeben" />
 
       <button type="submit" class="primary">Anmelden</button>
-
       <a href="/register" class="secondary">Registrieren</a>
     </form>
   </section>
@@ -26,27 +28,36 @@
     color: #2b2118;
   }
 
-  .brand-link {
-    position: fixed;
-    top: 24px;
-    left: 28px;
-    color: #8b552b;
-    font-size: 24px;
-    font-weight: 800;
-    text-decoration: none;
-  }
-
-  .brand-link:hover {
-    color: #4a2c1a;
-  }
-
   .auth-page {
     min-height: 100vh;
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 24px;
+    padding: 80px 24px 24px;
     box-sizing: border-box;
+  }
+
+  .brand-link {
+    position: fixed;
+    top: 20px;
+    left: 28px;
+    color: #8b552b;
+    font-size: 24px;
+    font-weight: 800;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 0;
+    z-index: 10;
+  }
+
+  .cookie-o {
+    font-size: 0.72em;
+    line-height: 1;
+    display: inline-flex;
+    transform: translateY(1px);
+    margin-left: -3px;
+    margin-right: -3px;
   }
 
   .auth-card {
