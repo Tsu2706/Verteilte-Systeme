@@ -41,15 +41,15 @@
 
   <section class="hero">
     <div class="content">
-      <p class="eyebrow">Deine Rezeptsammlung</p>
+      <p class="eyebrow">Alle Rezepte</p>
 
       <h1>
-        Lieblingsrezepte <span class="headline-cookie">🍪</span>
+        Hochgeladene Rezepte <span class="headline-cookie">🍪</span>
       </h1>
 
       <p class="subtitle">
-        Hier findest du alle gespeicherten Rezepte. Klicke auf ein Rezept, um
-        Zutaten und Zubereitung anzusehen.
+        Hier findest du alle hochgeladenen Rezepte übersichtlich an einem Ort.
+        Klicke auf ein Rezept, um die Details zu öffnen.
       </p>
     </div>
   </section>
@@ -125,8 +125,24 @@
     line-height: 1;
     display: inline-flex;
     transform: translateY(1px);
-    margin-left: -3px;
-    margin-right: -3px;
+    margin-left: 2px;
+    margin-right: 2px;
+  }
+
+  .plus {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: #fff7ed;
+    color: #9b551d;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    font-size: 20px;
+    font-weight: 900;
+    padding-bottom: 2px;
+    box-sizing: border-box;
   }
 
   .add-button {
@@ -145,19 +161,6 @@
     gap: 10px;
     box-shadow: 0 12px 30px rgba(92, 55, 25, 0.18);
     z-index: 10;
-  }
-
-  .plus {
-    width: 26px;
-    height: 26px;
-    border-radius: 50%;
-    background: #fff7ed;
-    color: #9b551d;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 22px;
-    font-weight: 900;
   }
 
   .hero {
