@@ -36,6 +36,7 @@
     font-family: Arial, sans-serif;
     background: linear-gradient(135deg, #fff7ed, #f3dfc8);
     color: #2b2118;
+    overflow-y: auto;
   }
 
   .new-page {
@@ -55,7 +56,7 @@
     display: flex;
     align-items: center;
     gap: 0;
-    z-index: 10;
+    z-index: 100;
   }
 
   .cookie-o {

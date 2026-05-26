@@ -1,32 +1,8 @@
 <script lang="ts">
-  import { onMount } from "svelte";
-  import { getRecipes } from "$lib/api";
-
-  type Recipe = {
-    id: number;
-    user_id: number;
-    title: string;
-    description?: string | null;
-    ingredients: unknown[];
-    steps: unknown[];
-    is_public: boolean;
-    created_at?: string;
-  };
-
-  let recipes = $state<Recipe[]>([]);
-  let loading = $state(true);
-  let error = $state("");
-
-  onMount(async () => {
-    try {
-      recipes = await getRecipes();
-    } catch (err) {
-      error = "Rezepte konnten nicht geladen werden.";
-      console.error(err);
-    } finally {
-      loading = false;
-    }
-  });
+  const benefits = [
+    "Lieblingsgerichte übersichtlich verwalten",
+    "Schnell zur Rezeptübersicht wechseln"
+  ];
 </script>
 
 <main class="home">
@@ -34,63 +10,40 @@
     SmartC<span class="cookie-o">🍪</span><span class="cookie-o">🍪</span>kies
   </a>
 
-  <a href="/recipes/new" class="add-button">
-    <span class="plus">+</span>
-    <span>Neues Lieblingsrezept hinzufügen</span>
-  </a>
-
   <section class="hero">
     <div class="content">
-      <p class="eyebrow">Alle Rezepte</p>
+      <p class="eyebrow">Deine smarte Rezept-App</p>
 
       <h1>
-        Hochgeladene Rezepte <span class="headline-cookie">🍪</span>
+        SmartC<span class="headline-cookie">🍪</span><span class="headline-cookie">🍪</span>kies
       </h1>
 
       <p class="subtitle">
-        Hier findest du alle hochgeladenen Rezepte übersichtlich an einem Ort.
-        Klicke auf ein Rezept, um die Details zu öffnen.
+        Speichere deine Lieblingsrezepte, entdecke neue Kochideen und behalte
+        alles übersichtlich an einem Ort.
       </p>
+
+      <div class="actions">
+        <a href="/recipes" class="primary">Rezepte ansehen</a>
+        <a href="/login" class="secondary">Einloggen</a>
+      </div>
+    </div>
+
+    <div class="cookie-card">
+      <div class="cookie">🍪</div>
+      <h2>Smart geplant. Einfach gekocht.</h2>
+      <p>Mit SmartCookies findest du schneller das passende Rezept für deinen Tag.</p>
     </div>
   </section>
 
-  {#if loading}
-    <section class="status-card">
-      <p>Rezepte werden geladen...</p>
-    </section>
-  {:else if error}
-    <section class="status-card">
-      <p>{error}</p>
-    </section>
-  {:else if recipes.length === 0}
-    <section class="status-card">
-      <div class="empty-cookie">🍪</div>
-      <h2>Noch keine Rezepte vorhanden</h2>
-      <p>Füge dein erstes Lieblingsrezept hinzu.</p>
-    </section>
-  {:else}
-    <section class="recipes-grid">
-      {#each recipes as recipe}
-        <a href={`/recipes/${recipe.id}`} class="recipe-card">
-          <div class="card-icon">🍪</div>
-
-          <div class="card-content">
-            <h2>{recipe.title}</h2>
-
-            <p>
-              {recipe.description ??
-                "Öffne das Rezept, um Zutaten und Zubereitung anzusehen."}
-            </p>
-
-            <div class="card-footer">
-              <span>{recipe.ingredients?.length ?? 0} Zutaten</span>
-              <span class="arrow">→</span>
-            </div>
-          </div>
-        </a>
-      {/each}
-    </section>
-  {/if}
+  <section class="benefits">
+    {#each benefits as benefit}
+      <div class="benefit-card">
+        <span>✓</span>
+        <p>{benefit}</p>
+      </div>
+    {/each}
+  </section>
 </main>
 
 <style>
@@ -99,11 +52,12 @@
     font-family: Arial, sans-serif;
     background: linear-gradient(135deg, #fff7ed, #f3dfc8);
     color: #3b2415;
+    overflow: hidden;
   }
 
   .home {
-    min-height: 100vh;
-    padding: 90px 24px 40px;
+    height: 100vh;
+    padding: 72px 24px 24px;
     box-sizing: border-box;
   }
 
@@ -117,6 +71,7 @@
     text-decoration: none;
     display: flex;
     align-items: center;
+    gap: 0;
     z-index: 10;
   }
 
@@ -125,52 +80,22 @@
     line-height: 1;
     display: inline-flex;
     transform: translateY(1px);
-    margin-left: 2px;
-    margin-right: 2px;
-  }
-
-  .plus {
-    width: 26px;
-    height: 26px;
-    border-radius: 50%;
-    background: #fff7ed;
-    color: #9b551d;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    line-height: 1;
-    font-size: 20px;
-    font-weight: 900;
-    padding-bottom: 2px;
-    box-sizing: border-box;
-  }
-
-  .add-button {
-    position: fixed;
-    top: 18px;
-    right: 28px;
-    background: #9b551d;
-    color: white;
-    min-height: 48px;
-    padding: 0 20px;
-    border-radius: 999px;
-    text-decoration: none;
-    font-weight: 800;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    box-shadow: 0 12px 30px rgba(92, 55, 25, 0.18);
-    z-index: 10;
+    margin-left: -3px;
+    margin-right: -3px;
   }
 
   .hero {
     max-width: 1180px;
-    margin: 0 auto 24px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1.4fr 0.7fr;
+    gap: 28px;
+    align-items: stretch;
   }
 
   .content,
-  .recipe-card,
-  .status-card {
+  .cookie-card,
+  .benefit-card {
     background: #fffaf4;
     border-radius: 26px;
     box-shadow: 0 12px 30px rgba(92, 55, 25, 0.12);
@@ -200,6 +125,7 @@
     display: inline-block;
     transform: translateY(-4px);
     margin-left: -5px;
+    margin-right: -5px;
   }
 
   .subtitle {
@@ -210,115 +136,130 @@
     color: #6d5140;
   }
 
-  .recipes-grid {
-    max-width: 1180px;
-    margin: 0 auto;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: 18px;
-  }
-
-  .recipe-card {
-    padding: 26px;
-    min-height: 220px;
-    text-decoration: none;
-    color: inherit;
+  .actions {
     display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    transition:
-      transform 0.2s ease,
-      box-shadow 0.2s ease;
+    gap: 16px;
+    margin-top: 28px;
   }
 
-  .recipe-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 18px 40px rgba(92, 55, 25, 0.18);
-  }
-
-  .card-icon {
-    width: 54px;
+  .primary,
+  .secondary {
+    width: 210px;
     height: 54px;
-    border-radius: 18px;
-    background: #fff0dd;
+    border-radius: 999px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 30px;
-    margin-bottom: 18px;
-  }
-
-  .card-content h2 {
-    margin: 0 0 10px;
-    color: #4a2c1a;
-    font-size: 26px;
-  }
-
-  .card-content p {
-    margin: 0;
-    color: #6d5140;
-    line-height: 1.5;
-    font-size: 16px;
-  }
-
-  .card-footer {
-    margin-top: 22px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    color: #9b551d;
     font-weight: 800;
-  }
-
-  .arrow {
-    font-size: 26px;
-  }
-
-  .status-card {
-    max-width: 720px;
-    margin: 0 auto;
-    padding: 34px;
-    text-align: center;
-  }
-
-  .status-card p {
-    margin: 0;
-    color: #6d5140;
     font-size: 18px;
+    text-decoration: none;
+    box-sizing: border-box;
   }
 
-  .status-card h2 {
-    margin: 0 0 12px;
-    color: #4a2c1a;
+  .primary {
+    background: #9b551d;
+    color: white;
   }
 
-  .empty-cookie {
-    font-size: 54px;
+  .secondary {
+    border: 3px solid #9b551d;
+    color: #9b551d;
+  }
+
+  .cookie-card {
+    padding: 32px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .cookie {
+    font-size: 62px;
     margin-bottom: 16px;
   }
 
-  @media (max-width: 750px) {
-    .add-button {
-      position: static;
-      margin: 0 0 24px;
-      justify-content: center;
-    }
+  .cookie-card h2 {
+    color: #4a2c1a;
+    font-size: 30px;
+    line-height: 1.1;
+    margin: 0 0 14px;
+  }
 
-    .brand-link {
-      position: static;
-      margin-bottom: 20px;
+  .cookie-card p {
+    color: #6d5140;
+    line-height: 1.5;
+    font-size: 17px;
+    margin: 0;
+  }
+
+  .benefits {
+    max-width: 1180px;
+    margin: 24px auto 0;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 18px;
+  }
+
+  .benefit-card {
+    padding: 20px 24px;
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    min-height: 76px;
+  }
+
+  .benefit-card span {
+    background: #9b551d;
+    color: white;
+    min-width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 18px;
+  }
+
+  .benefit-card p {
+    margin: 0;
+    color: #4a2c1a;
+    font-weight: 700;
+    font-size: 20px;
+    line-height: 1.2;
+  }
+
+  @media (max-width: 950px) {
+    :global(body) {
+      overflow: auto;
     }
 
     .home {
-      padding-top: 24px;
+      height: auto;
+      min-height: 100vh;
+    }
+
+    .hero,
+    .benefits {
+      grid-template-columns: 1fr;
     }
 
     h1 {
-      font-size: 42px;
+      font-size: 52px;
     }
 
     .content {
-      padding: 34px 28px;
+      padding: 40px;
+    }
+
+    .actions {
+      flex-direction: column;
+    }
+
+    .primary,
+    .secondary {
+      width: 100%;
     }
   }
 </style>

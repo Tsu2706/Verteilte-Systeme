@@ -4,11 +4,13 @@
 
   type Recipe = {
     id: number;
+    user_id: number;
     title: string;
-    description?: string;
-    ingredients?: string;
-    instructions?: string;
-    cooking_time?: number;
+    description?: string | null;
+    ingredients: unknown[];
+    steps: unknown[];
+    is_public: boolean;
+    created_at?: string;
   };
 
   let recipes = $state<Recipe[]>([]);
@@ -27,53 +29,47 @@
   });
 </script>
 
-<main class="recipes-page">
-  <header class="topbar">
-    <a href="/" class="brand-link" aria-label="Zur Startseite">
-      SmartC<span class="cookie-o">🍪</span><span class="cookie-o">🍪</span>kies
-    </a>
+<main class="home">
+  <a href="/" class="brand-link" aria-label="Zur Startseite">
+    SmartC<span class="cookie-o">🍪</span><span class="cookie-o">🍪</span>kies
+  </a>
 
-    <a href="/recipes/new" class="new-button">
-      <span class="plus">+</span>
-      <span>Neues Lieblingsrezept hinzufügen</span>
-    </a>
-  </header>
+  <a href="/recipes/new" class="add-button">
+    <span class="plus">+</span>
+    <span>Neues Lieblingsrezept hinzufügen</span>
+  </a>
 
   <section class="hero">
-    <p class="eyebrow">Deine Sammlung</p>
+    <div class="content">
+      <p class="eyebrow">Alle Rezepte</p>
 
-    <h1>
-      Lieblingsrezepte
-      <span class="headline-cookie">🍪</span>
-    </h1>
+      <h1>
+        Hochgeladene Rezepte <span class="headline-cookie">🍪</span>
+      </h1>
 
-    <p class="subtitle">
-      Hier findest du alle gespeicherten Rezepte übersichtlich an einem Ort.
-      Klicke auf ein Rezept, um die Details zu öffnen.
-    </p>
+      <p class="subtitle">
+        Hier findest du alle hochgeladenen Rezepte übersichtlich an einem Ort.
+        Klicke auf ein Rezept, um die Details zu öffnen.
+      </p>
+    </div>
   </section>
 
   {#if loading}
-    <section class="state-card">
+    <section class="status-card">
       <p>Rezepte werden geladen...</p>
     </section>
   {:else if error}
-    <section class="state-card error">
+    <section class="status-card">
       <p>{error}</p>
     </section>
   {:else if recipes.length === 0}
-    <section class="empty-state">
+    <section class="status-card">
       <div class="empty-cookie">🍪</div>
       <h2>Noch keine Rezepte vorhanden</h2>
-      <p>Füge dein erstes Lieblingsrezept hinzu und starte deine Sammlung.</p>
-
-      <a href="/recipes/new" class="empty-button">
-        <span>+</span>
-        Neues Lieblingsrezept hinzufügen
-      </a>
+      <p>Füge dein erstes Lieblingsrezept hinzu.</p>
     </section>
   {:else}
-    <section class="recipes-grid" aria-label="Rezeptübersicht">
+    <section class="recipes-grid">
       {#each recipes as recipe}
         <a href={`/recipes/${recipe.id}`} class="recipe-card">
           <div class="card-icon">🍪</div>
@@ -81,19 +77,13 @@
           <div class="card-content">
             <h2>{recipe.title}</h2>
 
-            {#if recipe.description}
-              <p>{recipe.description}</p>
-            {:else}
-              <p>Öffne das Rezept, um Zutaten und Zubereitung anzusehen.</p>
-            {/if}
+            <p>
+              {recipe.description ??
+                "Öffne das Rezept, um Zutaten und Zubereitung anzusehen."}
+            </p>
 
             <div class="card-footer">
-              {#if recipe.cooking_time}
-                <span>{recipe.cooking_time} Min.</span>
-              {:else}
-                <span>Rezeptdetails ansehen</span>
-              {/if}
-
+              <span>{recipe.ingredients?.length ?? 0} Zutaten</span>
               <span class="arrow">→</span>
             </div>
           </div>
@@ -106,110 +96,118 @@
 <style>
   :global(body) {
     margin: 0;
-    font-family:
-      Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-      "Segoe UI", sans-serif;
-    background:
-      radial-gradient(circle at top left, rgba(255, 216, 155, 0.45), transparent 30%),
-      linear-gradient(135deg, #fff7ed 0%, #fff1df 45%, #fbe7d0 100%);
-    color: #3f2a1d;
+    font-family: Arial, sans-serif;
+    background: linear-gradient(135deg, #fff7ed, #f3dfc8);
+    color: #3b2415;
   }
 
-  .recipes-page {
+  .home {
     min-height: 100vh;
-    padding: 2rem;
-  }
-
-  .topbar {
-    max-width: 1180px;
-    margin: 0 auto 3rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1.5rem;
+    padding: 90px 24px 40px;
+    box-sizing: border-box;
   }
 
   .brand-link {
-    text-decoration: none;
-    color: #4b2e1f;
-    font-size: clamp(1.4rem, 3vw, 2rem);
-    font-weight: 900;
-    letter-spacing: -0.05em;
-  }
-
-  .cookie-o,
-  .headline-cookie {
-    display: inline-block;
-    transform: translateY(0.08em);
-  }
-
-  .new-button,
-  .empty-button {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.7rem;
-    border: none;
-    border-radius: 999px;
-    padding: 0.9rem 1.3rem;
-    background: #8b4a24;
-    color: #fffaf3;
-    text-decoration: none;
+    position: fixed;
+    top: 20px;
+    left: 28px;
+    color: #8b552b;
+    font-size: 24px;
     font-weight: 800;
-    box-shadow: 0 14px 30px rgba(139, 74, 36, 0.25);
-    transition:
-      transform 0.2s ease,
-      box-shadow 0.2s ease,
-      background 0.2s ease;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    z-index: 10;
   }
 
-  .new-button:hover,
-  .empty-button:hover {
-    transform: translateY(-2px);
-    background: #6f381b;
-    box-shadow: 0 18px 40px rgba(139, 74, 36, 0.32);
+  .cookie-o {
+    font-size: 0.72em;
+    line-height: 1;
+    display: inline-flex;
+    transform: translateY(1px);
+    margin-left: 2px;
+    margin-right: 2px;
   }
 
   .plus {
-    width: 1.6rem;
-    height: 1.6rem;
-    display: inline-grid;
-    place-items: center;
+    width: 26px;
+    height: 26px;
     border-radius: 50%;
-    background: #fff2dc;
-    color: #8b4a24;
-    font-size: 1.2rem;
+    background: #fff7ed;
+    color: #9b551d;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    font-size: 20px;
     font-weight: 900;
+    padding-bottom: 2px;
+    box-sizing: border-box;
+  }
+
+  .add-button {
+    position: fixed;
+    top: 18px;
+    right: 28px;
+    background: #9b551d;
+    color: white;
+    min-height: 48px;
+    padding: 0 20px;
+    border-radius: 999px;
+    text-decoration: none;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 12px 30px rgba(92, 55, 25, 0.18);
+    z-index: 10;
   }
 
   .hero {
-    max-width: 900px;
-    margin: 0 auto 3rem;
-    text-align: center;
+    max-width: 1180px;
+    margin: 0 auto 24px;
+  }
+
+  .content,
+  .recipe-card,
+  .status-card {
+    background: #fffaf4;
+    border-radius: 26px;
+    box-shadow: 0 12px 30px rgba(92, 55, 25, 0.12);
+  }
+
+  .content {
+    padding: 42px 50px;
   }
 
   .eyebrow {
-    margin: 0 0 0.8rem;
-    color: #a7652c;
+    color: #a35b27;
     font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    font-size: 0.8rem;
+    font-size: 18px;
+    margin: 0 0 14px;
   }
 
   h1 {
     margin: 0;
-    font-size: clamp(2.6rem, 7vw, 5.2rem);
+    font-size: 56px;
     line-height: 0.95;
-    letter-spacing: -0.08em;
-    color: #3f2415;
+    color: #4a2c1a;
+    letter-spacing: -2px;
+  }
+
+  .headline-cookie {
+    font-size: 0.62em;
+    display: inline-block;
+    transform: translateY(-4px);
+    margin-left: -5px;
   }
 
   .subtitle {
-    max-width: 640px;
-    margin: 1.4rem auto 0;
-    color: #7b5a42;
-    font-size: 1.1rem;
-    line-height: 1.7;
+    margin: 22px 0 0;
+    max-width: 650px;
+    font-size: 18px;
+    line-height: 1.5;
+    color: #6d5140;
   }
 
   .recipes-grid {
@@ -217,119 +215,110 @@
     margin: 0 auto;
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: 1.4rem;
+    gap: 18px;
   }
 
   .recipe-card {
-    min-height: 230px;
-    padding: 1.4rem;
-    border-radius: 2rem;
-    background: rgba(255, 250, 243, 0.82);
-    border: 1px solid rgba(139, 74, 36, 0.13);
+    padding: 26px;
+    min-height: 220px;
     text-decoration: none;
     color: inherit;
-    box-shadow: 0 18px 45px rgba(91, 56, 31, 0.12);
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     transition:
       transform 0.2s ease,
-      box-shadow 0.2s ease,
-      border-color 0.2s ease;
+      box-shadow 0.2s ease;
   }
 
   .recipe-card:hover {
-    transform: translateY(-6px);
-    border-color: rgba(139, 74, 36, 0.35);
-    box-shadow: 0 24px 60px rgba(91, 56, 31, 0.18);
+    transform: translateY(-5px);
+    box-shadow: 0 18px 40px rgba(92, 55, 25, 0.18);
   }
 
   .card-icon {
-    width: 3.2rem;
-    height: 3.2rem;
-    display: grid;
-    place-items: center;
-    border-radius: 1.1rem;
-    background: #fff0d8;
-    font-size: 1.7rem;
-    margin-bottom: 1.2rem;
+    width: 54px;
+    height: 54px;
+    border-radius: 18px;
+    background: #fff0dd;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 30px;
+    margin-bottom: 18px;
   }
 
   .card-content h2 {
-    margin: 0 0 0.7rem;
-    font-size: 1.35rem;
-    color: #432513;
+    margin: 0 0 10px;
+    color: #4a2c1a;
+    font-size: 26px;
   }
 
   .card-content p {
     margin: 0;
-    color: #7b5a42;
-    line-height: 1.6;
+    color: #6d5140;
+    line-height: 1.5;
+    font-size: 16px;
   }
 
   .card-footer {
-    margin-top: 1.5rem;
+    margin-top: 22px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    color: #9a5926;
+    color: #9b551d;
     font-weight: 800;
   }
 
   .arrow {
-    font-size: 1.5rem;
+    font-size: 26px;
   }
 
-  .state-card,
-  .empty-state {
-    max-width: 680px;
+  .status-card {
+    max-width: 720px;
     margin: 0 auto;
-    padding: 2rem;
-    border-radius: 2rem;
-    background: rgba(255, 250, 243, 0.86);
-    border: 1px solid rgba(139, 74, 36, 0.13);
-    box-shadow: 0 18px 45px rgba(91, 56, 31, 0.12);
+    padding: 34px;
     text-align: center;
   }
 
-  .state-card p,
-  .empty-state p {
-    color: #7b5a42;
+  .status-card p {
+    margin: 0;
+    color: #6d5140;
+    font-size: 18px;
   }
 
-  .error p {
-    color: #9b1c1c;
-    font-weight: 700;
+  .status-card h2 {
+    margin: 0 0 12px;
+    color: #4a2c1a;
   }
 
   .empty-cookie {
-    font-size: 3rem;
-    margin-bottom: 1rem;
+    font-size: 54px;
+    margin-bottom: 16px;
   }
 
-  .empty-state h2 {
-    margin: 0 0 0.7rem;
-    color: #432513;
-  }
-
-  .empty-button {
-    margin-top: 1.3rem;
-  }
-
-  @media (max-width: 720px) {
-    .recipes-page {
-      padding: 1.2rem;
-    }
-
-    .topbar {
-      align-items: flex-start;
-      flex-direction: column;
-      margin-bottom: 2.4rem;
-    }
-
-    .new-button {
-      width: 100%;
+  @media (max-width: 750px) {
+    .add-button {
+      position: static;
+      margin: 0 0 24px;
       justify-content: center;
+    }
+
+    .brand-link {
+      position: static;
+      margin-bottom: 20px;
+    }
+
+    .home {
+      padding-top: 24px;
+    }
+
+    h1 {
+      font-size: 42px;
+    }
+
+    .content {
+      padding: 34px 28px;
     }
   }
 </style>
