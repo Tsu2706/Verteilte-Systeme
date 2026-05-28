@@ -81,7 +81,7 @@
     font-family: Arial, sans-serif;
     background: linear-gradient(135deg, #fff7ed, #f3dfc8);
     color: #3b2415;
-    overflow: hidden;
+    overflow: auto;
   }
 
   .home {

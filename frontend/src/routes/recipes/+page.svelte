@@ -1,17 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { getRecipes } from "$lib/api";
-
-  type Recipe = {
-    id: number;
-    user_id: number;
-    title: string;
-    description?: string | null;
-    ingredients: unknown[];
-    steps: unknown[];
-    is_public: boolean;
-    created_at?: string;
-  };
+  import { getRecipes, type Recipe } from "$lib/api";
 
   let recipes = $state<Recipe[]>([]);
   let loading = $state(true);
@@ -24,7 +13,9 @@
 
       return (
         recipe.title.toLowerCase().includes(search) ||
-        recipe.description?.toLowerCase().includes(search)
+        recipe.description?.toLowerCase().includes(search) ||
+        recipe.time?.toLowerCase().includes(search) ||
+        recipe.difficulty?.toLowerCase().includes(search)
       );
     })
   );
@@ -109,8 +100,20 @@
                 "Öffne das Rezept, um Zutaten und Zubereitung anzusehen."}
             </p>
 
+            <div class="recipe-meta">
+              {#if recipe.time}
+                <span>⏱ {recipe.time}</span>
+              {/if}
+
+              {#if recipe.difficulty}
+                <span>⭐ {recipe.difficulty}</span>
+              {/if}
+
+              <span>🥣 {recipe.ingredients?.length ?? 0} Zutaten</span>
+            </div>
+
             <div class="card-footer">
-              <span>{recipe.ingredients?.length ?? 0} Zutaten</span>
+              <span>{recipe.is_public ? "Öffentlich" : "Privat"}</span>
               <span class="arrow">→</span>
             </div>
           </div>
@@ -277,7 +280,7 @@
 
   .recipe-card {
     padding: 26px;
-    min-height: 220px;
+    min-height: 240px;
     text-decoration: none;
     color: inherit;
     display: flex;
@@ -316,6 +319,22 @@
     color: #6d5140;
     line-height: 1.5;
     font-size: 16px;
+  }
+
+  .recipe-meta {
+    margin-top: 18px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .recipe-meta span {
+    background: #fff0dd;
+    color: #8b552b;
+    padding: 7px 12px;
+    border-radius: 999px;
+    font-size: 14px;
+    font-weight: 800;
   }
 
   .card-footer {
