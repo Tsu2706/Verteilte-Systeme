@@ -1,62 +1,115 @@
-const API_URL = "http://localhost:8000";
+const API_BASE_URL = "http://localhost:8000";
 
 export type Recipe = {
   id: number;
-  user_id: number;
-  title: string;
-  description?: string | null;
-  ingredients: string[];
-  steps: string[];
-  is_public: boolean;
-  created_at?: string;
-  time?: string | null;
-  difficulty?: string | null;
-};
-
-export type RecipeCreate = {
   title: string;
   description?: string;
-  ingredients: string[];
-  steps: string[];
-  is_public: boolean;
+  ingredients?: string;
+  instructions?: string;
   time?: string;
   difficulty?: string;
+  image_url?: string;
+  user_id?: number;
 };
 
+export type RecipeInput = {
+  title: string;
+  description?: string;
+  ingredients?: string;
+  instructions?: string;
+  time?: string;
+  difficulty?: string;
+  image_url?: string;
+};
+
+export type User = {
+  id: number;
+  username: string;
+  email: string;
+};
+
+function getToken() {
+  return localStorage.getItem("token");
+}
+
+function authHeaders() {
+  const token = getToken();
+
+  return {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {})
+  };
+}
+
+async function handleResponse(response: Response) {
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || "Ein Fehler ist aufgetreten.");
+  }
+
+  if (response.status === 204) {
+    return null;
+  }
+
+  return response.json();
+}
+
 export async function getRecipes(): Promise<Recipe[]> {
-  const response = await fetch(`${API_URL}/recipes`);
-
-  if (!response.ok) {
-    throw new Error("Rezepte konnten nicht geladen werden.");
-  }
-
-  return response.json();
+  const response = await fetch(`${API_BASE_URL}/recipes`);
+  return handleResponse(response);
 }
 
-export async function getRecipe(id: string | number): Promise<Recipe> {
-  const response = await fetch(`${API_URL}/recipes/${id}`);
-
-  if (!response.ok) {
-    throw new Error("Rezept konnte nicht geladen werden.");
-  }
-
-  return response.json();
+export async function getRecipe(id: number): Promise<Recipe> {
+  const response = await fetch(`${API_BASE_URL}/recipes/${id}`);
+  return handleResponse(response);
 }
 
-export async function createRecipe(
-  recipe: RecipeCreate
-): Promise<Recipe> {
-  const response = await fetch(`${API_URL}/recipes`, {
+export async function createRecipe(data: RecipeInput): Promise<Recipe> {
+  const response = await fetch(`${API_BASE_URL}/recipes`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(recipe)
+    headers: authHeaders(),
+    body: JSON.stringify(data)
   });
 
-  if (!response.ok) {
-    throw new Error("Rezept konnte nicht gespeichert werden.");
-  }
+  return handleResponse(response);
+}
 
-  return response.json();
+export async function updateRecipe(id: number, data: RecipeInput): Promise<Recipe> {
+  const response = await fetch(`${API_BASE_URL}/recipes/${id}`, {
+    method: "PUT",
+    headers: authHeaders(),
+    body: JSON.stringify(data)
+  });
+
+  return handleResponse(response);
+}
+
+export async function deleteRecipe(id: number): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/recipes/${id}`, {
+    method: "DELETE",
+    headers: authHeaders()
+  });
+
+  await handleResponse(response);
+}
+
+export async function getMe(): Promise<User> {
+  const response = await fetch(`${API_BASE_URL}/users/me`, {
+    headers: authHeaders()
+  });
+
+  return handleResponse(response);
+}
+
+export async function getMyRecipes(): Promise<Recipe[]> {
+  const response = await fetch(`${API_BASE_URL}/users/me/recipes`, {
+    headers: authHeaders()
+  });
+
+  return handleResponse(response);
+}
+
+export function logout() {
+  localStorage.removeItem("token");
+  window.location.href = "/login";
 }

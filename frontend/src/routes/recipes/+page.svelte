@@ -32,36 +32,46 @@
   });
 </script>
 
-<main class="home">
-  <a href="/" class="brand-link" aria-label="Zur Startseite">
+<main class="recipes-page">
+  <a href="/" class="brand-link">
     SmartC<span class="cookie-o">🍪</span><span class="cookie-o">🍪</span>kies
   </a>
 
-  <div class="top-actions">
-    <div class="search-card">
-      <span>🔍</span>
+  <header class="topbar">
+    <div class="search-container">
+      <span class="search-icon">⌕</span>
+
       <input
         type="text"
         bind:value={searchTerm}
-        placeholder="Rezept suchen..."
+        placeholder="Rezepte durchsuchen..."
       />
     </div>
 
-    <a href="/recipes/new" class="add-button">
-      <span class="plus">+</span>
-      <span>Neues Lieblingsrezept hinzufügen</span>
-    </a>
-  </div>
+    <div class="topbar-actions">
+      <a href="/recipes/new" class="new-button">
+        <span class="plus-circle">+</span>
+        Neues Rezept
+      </a>
 
-  <section class="hero">
-    <div class="content">
+      <a href="/account" class="account-link">
+        Mein Konto
+      </a>
+    </div>
+  </header>
+
+  <section class="hero-card">
+    <div>
+      <p class="eyebrow">SmartCookies Rezeptwelt</p>
+
       <h1>
-        Hochgeladene Rezepte <span class="headline-cookie">🍪</span>
+        Hochgeladene Rezepte
+        <span class="headline-cookie">🍪</span>
       </h1>
 
       <p class="subtitle">
-        Hier findest du alle hochgeladenen Rezepte übersichtlich an einem Ort.
-        Klicke auf ein Rezept, um die Details zu öffnen.
+        Entdecke neue Lieblingsrezepte, speichere eigene Kreationen
+        und verwalte alles an einem Ort.
       </p>
     </div>
   </section>
@@ -74,30 +84,32 @@
     <section class="status-card">
       <p>{error}</p>
     </section>
-  {:else if recipes.length === 0}
-    <section class="status-card">
-      <div class="empty-cookie">🍪</div>
-      <h2>Noch keine Rezepte vorhanden</h2>
-      <p>Füge dein erstes Lieblingsrezept hinzu.</p>
-    </section>
   {:else if filteredRecipes.length === 0}
     <section class="status-card">
-      <div class="empty-cookie">🔍</div>
-      <h2>Kein Rezept gefunden</h2>
-      <p>Probiere einen anderen Suchbegriff aus.</p>
+      <div class="empty-icon">🍪</div>
+      <h2>Keine Rezepte gefunden</h2>
+      <p>Versuche einen anderen Suchbegriff.</p>
     </section>
   {:else}
     <section class="recipes-grid">
       {#each filteredRecipes as recipe}
         <a href={`/recipes/${recipe.id}`} class="recipe-card">
-          <div class="card-icon">🍪</div>
+          <div class="recipe-top">
+            <div class="recipe-icon">🍪</div>
 
-          <div class="card-content">
+            {#if recipe.difficulty}
+              <span class="difficulty">
+                {recipe.difficulty}
+              </span>
+            {/if}
+          </div>
+
+          <div class="recipe-content">
             <h2>{recipe.title}</h2>
 
             <p>
-              {recipe.description ??
-                "Öffne das Rezept, um Zutaten und Zubereitung anzusehen."}
+              {recipe.description ||
+                "Öffne das Rezept für Zutaten und Zubereitung."}
             </p>
 
             <div class="recipe-meta">
@@ -105,16 +117,7 @@
                 <span>⏱ {recipe.time}</span>
               {/if}
 
-              {#if recipe.difficulty}
-                <span>⭐ {recipe.difficulty}</span>
-              {/if}
-
-              <span>🥣 {recipe.ingredients?.length ?? 0} Zutaten</span>
-            </div>
-
-            <div class="card-footer">
-              <span>{recipe.is_public ? "Öffentlich" : "Privat"}</span>
-              <span class="arrow">→</span>
+              <span>→ Rezept öffnen</span>
             </div>
           </div>
         </a>
@@ -127,281 +130,316 @@
   :global(body) {
     margin: 0;
     font-family: Arial, sans-serif;
-    background: linear-gradient(135deg, #fff7ed, #f3dfc8);
-    color: #3b2415;
+    background:
+      radial-gradient(circle at top left, #ffe1b8 0, transparent 34%),
+      linear-gradient(135deg, #fff7ec 0%, #f6d7aa 100%);
+    color: #3d2415;
   }
 
-  .home {
+  .recipes-page {
     min-height: 100vh;
-    padding: 90px 24px 40px;
+    padding: 26px;
     box-sizing: border-box;
   }
 
   .brand-link {
     position: absolute;
-    top: 20px;
-    left: 28px;
-    color: #8b552b;
-    font-size: 24px;
-    font-weight: 800;
+    top: 30px;
+    left: 34px;
     text-decoration: none;
-    display: flex;
-    align-items: center;
-    z-index: 10;
+    font-size: 2rem;
+    font-weight: 900;
+    color: #8b552b;
+    letter-spacing: -1px;
   }
 
   .cookie-o {
-    font-size: 0.72em;
-    line-height: 1;
-    display: inline-flex;
-    transform: translateY(1px);
-    margin-left: -3px;
-    margin-right: -3px;
+    display: inline-block;
+    margin: 0 -3px;
+    font-size: 1.65rem;
+    vertical-align: 2px;
   }
 
-  .top-actions {
-    position: fixed;
-    top: 18px;
-    right: 28px;
+  .topbar {
+    max-width: 1280px;
+    margin: 0 auto 30px;
     display: flex;
+    justify-content: flex-end;
     align-items: center;
-    gap: 14px;
-    z-index: 10;
+    gap: 18px;
+    padding-top: 6px;
   }
 
-  .search-card {
-    width: 300px;
-    min-height: 48px;
-    background: #fffaf4;
+  .search-container {
+    width: 380px;
+    height: 56px;
     border-radius: 999px;
-    box-shadow: 0 12px 30px rgba(92, 55, 25, 0.12);
-    padding: 0 18px;
+    background: rgba(255, 250, 244, 0.92);
+    box-shadow: 0 10px 30px rgba(77, 43, 18, 0.08);
     display: flex;
     align-items: center;
-    gap: 12px;
-    box-sizing: border-box;
+    padding: 0 22px;
+    gap: 14px;
+    backdrop-filter: blur(12px);
   }
 
-  .search-card span {
-    font-size: 20px;
+  .search-icon {
+    font-size: 1.1rem;
+    color: #9a7357;
   }
 
-  .search-card input {
+  .search-container input {
     width: 100%;
     border: none;
     outline: none;
     background: transparent;
-    color: #4a2c1a;
-    font-size: 16px;
-    font-weight: 700;
+    font-size: 1rem;
+    color: #4a2b18;
   }
 
-  .search-card input::placeholder {
-    color: #9b7358;
+  .search-container input::placeholder {
+    color: #9c7a63;
   }
 
-  .plus {
-    width: 26px;
-    height: 26px;
-    border-radius: 50%;
-    background: #fff7ed;
-    color: #9b551d;
-    display: inline-flex;
+  .topbar-actions {
+    display: flex;
     align-items: center;
-    justify-content: center;
-    line-height: 1;
-    font-size: 20px;
-    font-weight: 900;
-    padding-bottom: 2px;
-    box-sizing: border-box;
+    gap: 20px;
   }
 
-  .add-button {
-    background: #9b551d;
-    color: white;
-    min-height: 48px;
-    padding: 0 20px;
+  .new-button {
+    height: 56px;
+    padding: 0 24px;
     border-radius: 999px;
+    background: linear-gradient(135deg, #b86a1f, #9a5518);
+    color: white;
     text-decoration: none;
     font-weight: 800;
     display: flex;
     align-items: center;
-    gap: 10px;
-    box-shadow: 0 12px 30px rgba(92, 55, 25, 0.18);
+    gap: 12px;
+    box-shadow: 0 14px 30px rgba(155, 85, 29, 0.22);
   }
 
-  .hero {
-    max-width: 1180px;
-    margin: 0 auto 24px;
+  .plus-circle {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: white;
+    color: #9a5518;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
+    font-weight: 900;
   }
 
-  .content,
-  .recipe-card,
-  .status-card {
-    background: #fffaf4;
-    border-radius: 26px;
-    box-shadow: 0 12px 30px rgba(92, 55, 25, 0.12);
+  .account-link {
+    text-decoration: none;
+    color: #8b552b;
+    font-size: 1rem;
+    font-weight: 400;
   }
 
-  .content {
-    padding: 42px 50px;
+  .hero-card {
+    max-width: 1280px;
+    margin: 0 auto 30px;
+    padding: 54px;
+    border-radius: 38px;
+    background: rgba(255, 250, 244, 0.82);
+    backdrop-filter: blur(14px);
+    box-shadow: 0 20px 60px rgba(77, 43, 18, 0.1);
+  }
+
+  .eyebrow {
+    margin: 0 0 14px;
+    color: #a56a3d;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 0.82rem;
   }
 
   h1 {
     margin: 0;
-    font-size: 56px;
+    font-size: clamp(3rem, 7vw, 5.4rem);
     line-height: 0.95;
-    color: #4a2c1a;
-    letter-spacing: -2px;
+    letter-spacing: -3px;
+    color: #4a2b18;
   }
 
   .headline-cookie {
-    font-size: 0.62em;
-    display: inline-block;
-    transform: translateY(-4px);
-    margin-left: -5px;
+    font-size: 0.72em;
   }
 
   .subtitle {
-    margin: 22px 0 0;
-    max-width: 650px;
-    font-size: 18px;
-    line-height: 1.5;
-    color: #6d5140;
+    margin: 24px 0 0;
+    max-width: 760px;
+    color: #6f5646;
+    font-size: 1.2rem;
+    line-height: 1.6;
   }
 
   .recipes-grid {
-    max-width: 1180px;
+    max-width: 1280px;
     margin: 0 auto;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: 18px;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 24px;
   }
 
   .recipe-card {
-    padding: 26px;
-    min-height: 240px;
     text-decoration: none;
     color: inherit;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
+    border-radius: 32px;
+    padding: 28px;
+    background: rgba(255, 250, 244, 0.88);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 20px 40px rgba(77, 43, 18, 0.08);
     transition:
       transform 0.2s ease,
       box-shadow 0.2s ease;
   }
 
   .recipe-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 18px 40px rgba(92, 55, 25, 0.18);
+    transform: translateY(-6px);
+    box-shadow: 0 28px 50px rgba(77, 43, 18, 0.14);
   }
 
-  .card-icon {
-    width: 54px;
-    height: 54px;
-    border-radius: 18px;
+  .recipe-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 22px;
+  }
+
+  .recipe-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 22px;
     background: #fff0dd;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 30px;
-    margin-bottom: 18px;
+    font-size: 2rem;
   }
 
-  .card-content h2 {
-    margin: 0 0 10px;
-    color: #4a2c1a;
-    font-size: 26px;
+  .difficulty {
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: #f6e1ca;
+    color: #8a5a2f;
+    font-size: 0.82rem;
+    font-weight: 800;
   }
 
-  .card-content p {
+  .recipe-content h2 {
+    margin: 0 0 14px;
+    font-size: 1.7rem;
+    color: #4a2b18;
+  }
+
+  .recipe-content p {
     margin: 0;
-    color: #6d5140;
-    line-height: 1.5;
-    font-size: 16px;
+    color: #6f5646;
+    line-height: 1.6;
   }
 
   .recipe-meta {
-    margin-top: 18px;
+    margin-top: 24px;
     display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  .recipe-meta span {
-    background: #fff0dd;
-    color: #8b552b;
-    padding: 7px 12px;
-    border-radius: 999px;
-    font-size: 14px;
-    font-weight: 800;
-  }
-
-  .card-footer {
-    margin-top: 22px;
-    display: flex;
-    align-items: center;
     justify-content: space-between;
-    color: #9b551d;
-    font-weight: 800;
-  }
-
-  .arrow {
-    font-size: 26px;
+    align-items: center;
+    color: #9a5518;
+    font-weight: 700;
+    font-size: 0.92rem;
   }
 
   .status-card {
-    max-width: 720px;
-    margin: 0 auto;
+    max-width: 700px;
+    margin: 80px auto 0;
     padding: 34px;
+    border-radius: 28px;
     text-align: center;
+    background: rgba(255, 250, 244, 0.88);
+    box-shadow: 0 20px 40px rgba(77, 43, 18, 0.08);
+  }
+
+  .status-card h2 {
+    margin: 0 0 10px;
   }
 
   .status-card p {
     margin: 0;
-    color: #6d5140;
-    font-size: 18px;
+    color: #6f5646;
   }
 
-  .status-card h2 {
-    margin: 0 0 12px;
-    color: #4a2c1a;
+  .empty-icon {
+    font-size: 3rem;
+    margin-bottom: 14px;
   }
 
-  .empty-cookie {
-    font-size: 54px;
-    margin-bottom: 16px;
-  }
-
-  @media (max-width: 750px) {
-    .top-actions {
-      position: static;
+  @media (max-width: 980px) {
+    .topbar {
       flex-direction: column;
       align-items: stretch;
-      margin: 0 0 24px;
+      padding-top: 70px;
     }
 
-    .search-card,
-    .add-button {
+    .search-container {
       width: 100%;
-      justify-content: center;
+      box-sizing: border-box;
+    }
+
+    .topbar-actions {
+      width: 100%;
+      justify-content: space-between;
+    }
+
+    .hero-card {
+      padding: 34px;
+      border-radius: 28px;
+    }
+
+    h1 {
+      letter-spacing: -2px;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .recipes-page {
+      padding: 18px;
     }
 
     .brand-link {
       position: static;
-      margin-bottom: 20px;
+      display: inline-block;
+      margin-bottom: 18px;
     }
 
-    .home {
-      padding-top: 24px;
+    .topbar {
+      padding-top: 0;
     }
 
-    h1 {
-      font-size: 42px;
+    .topbar-actions {
+      flex-direction: column;
+      align-items: stretch;
     }
 
-    .content {
-      padding: 34px 28px;
+    .new-button {
+      justify-content: center;
+    }
+
+    .account-link {
+      text-align: center;
+    }
+
+    .hero-card {
+      padding: 28px;
+    }
+
+    .recipes-grid {
+      grid-template-columns: 1fr;
     }
   }
 </style>
