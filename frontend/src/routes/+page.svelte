@@ -3,6 +3,20 @@
     "Lieblingsgerichte übersichtlich verwalten",
     "Schnell zur Rezeptübersicht wechseln"
   ];
+
+  const tips = [
+    "Pasta-Wasser immer salzen, bevor die Nudeln hineinkommen.",
+    "Messer regelmäßig schärfen – das macht Kochen schneller und sicherer.",
+    "Kräuter erst am Ende dazugeben, damit sie frisch schmecken.",
+    "Pfanne immer gut vorheizen, bevor du etwas anbrätst.",
+    "Rezepte vor dem Kochen einmal komplett durchlesen.",
+    "Zutaten vorher bereitstellen – das spart Stress beim Kochen.",
+    "Reste direkt luftdicht verpacken, damit sie länger frisch bleiben."
+  ];
+
+  const today = new Date();
+  const dayIndex = today.getDay();
+  const tipOfTheDay = tips[dayIndex];
 </script>
 
 <main class="home">
@@ -11,42 +25,53 @@
   </a>
 
   <section class="hero">
-    <div class="content">
-      <p class="eyebrow">Deine smarte Rezept-App</p>
+    <div class="left-column">
+      <div class="content">
+        <p class="eyebrow">Deine smarte Rezept-App</p>
 
-      <h1>
-        SmartC<span class="headline-cookie">🍪</span><span class="headline-cookie">🍪</span>kies
-      </h1>
+        <h1>
+          SmartC<span class="headline-cookie">🍪</span><span class="headline-cookie">🍪</span>kies
+        </h1>
 
-      <p class="subtitle">
-        Speichere deine Lieblingsrezepte, entdecke neue Kochideen und behalte
-        alles übersichtlich an einem Ort.
-      </p>
+        <p class="subtitle">
+          Speichere deine Lieblingsrezepte, entdecke neue Kochideen und behalte
+          alles übersichtlich an einem Ort.
+        </p>
 
-      <div class="actions">
-        <a href="/recipes" class="primary">Rezepte ansehen</a>
-        <a href="/login" class="secondary">Einloggen</a>
+        <div class="actions">
+          <a href="/recipes" class="primary">Rezepte ansehen</a>
+          <a href="/login" class="secondary">Einloggen</a>
+        </div>
+      </div>
+
+      <section class="benefits">
+        {#each benefits as benefit}
+          <div class="benefit-card">
+            <span>✓</span>
+            <p>{benefit}</p>
+          </div>
+        {/each}
+      </section>
+
+      <div class="daily-tip">
+        <span>💡</span>
+        <div>
+          <strong>Tipp des Tages</strong>
+          <p>{tipOfTheDay}</p>
+        </div>
       </div>
     </div>
 
     <div class="cookie-card">
       <img
-       src="/images/portrait.png"
-       alt="SmartCookies Team"
-       class="team-image"
+        src="/images/portrait.png"
+        alt="SmartCookies Team"
+        class="team-image"
       />
+
       <h2>Smart geplant. Einfach gekocht.</h2>
       <p>Mit SmartCookies findest du schneller das passende Rezept für deinen Tag.</p>
     </div>
-  </section>
-
-  <section class="benefits">
-    {#each benefits as benefit}
-      <div class="benefit-card">
-        <span>✓</span>
-        <p>{benefit}</p>
-      </div>
-    {/each}
   </section>
 </main>
 
@@ -56,7 +81,7 @@
     font-family: Arial, sans-serif;
     background: linear-gradient(135deg, #fff7ed, #f3dfc8);
     color: #3b2415;
-    overflow: hidden;
+    overflow: auto;
   }
 
   .home {
@@ -66,7 +91,7 @@
   }
 
   .brand-link {
-    position: fixed;
+    position: absolute;
     top: 20px;
     left: 28px;
     color: #8b552b;
@@ -88,19 +113,9 @@
     margin-right: -3px;
   }
 
-  .team-image {
-    width: 100%;
-    max-width: 420px;
-    height: auto;
-    object-fit: contain;
-    margin-bottom: 32px;
-
-    border-radius: 28px;
-    filter: drop-shadow(0 18px 28px rgba(59, 36, 20, 0.18));
-  }
-
   .hero {
     max-width: 1180px;
+    height: 100%;
     margin: 0 auto;
     display: grid;
     grid-template-columns: 1.4fr 0.7fr;
@@ -108,15 +123,23 @@
     align-items: stretch;
   }
 
+  .left-column {
+    display: grid;
+    grid-template-rows: 1fr auto auto;
+    gap: 18px;
+    min-height: 0;
+  }
+
   .content,
   .cookie-card,
-  .benefit-card {
+  .benefit-card,
+  .daily-tip {
     background: #fffaf4;
-    border-radius: 26px;
     box-shadow: 0 12px 30px rgba(92, 55, 25, 0.12);
   }
 
   .content {
+    border-radius: 26px;
     padding: 42px 50px;
   }
 
@@ -154,7 +177,7 @@
   .actions {
     display: flex;
     gap: 16px;
-    margin-top: 28px;
+    margin-top: 42px;
   }
 
   .primary,
@@ -182,6 +205,7 @@
   }
 
   .cookie-card {
+    border-radius: 26px;
     padding: 32px;
     text-align: center;
     display: flex;
@@ -189,9 +213,15 @@
     justify-content: center;
   }
 
-  .cookie {
-    font-size: 62px;
-    margin-bottom: 16px;
+  .team-image {
+    width: 100%;
+    max-width: 420px;
+    height: auto;
+    object-fit: contain;
+    margin: 0 auto 32px;
+
+    border-radius: 28px;
+    filter: drop-shadow(0 18px 28px rgba(59, 36, 20, 0.18));
   }
 
   .cookie-card h2 {
@@ -209,40 +239,72 @@
   }
 
   .benefits {
-    max-width: 1180px;
-    margin: 24px auto 0;
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 18px;
+    gap: 14px;
+    margin: 0;
   }
 
   .benefit-card {
-    padding: 20px 24px;
+    border-radius: 22px;
+    padding: 16px 18px;
     display: flex;
-    gap: 14px;
+    gap: 12px;
     align-items: center;
-    min-height: 76px;
+    min-height: 58px;
   }
 
   .benefit-card span {
     background: #9b551d;
     color: white;
-    min-width: 36px;
-    height: 36px;
+    min-width: 32px;
+    height: 32px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: 800;
-    font-size: 18px;
+    font-size: 16px;
   }
 
   .benefit-card p {
     margin: 0;
     color: #4a2c1a;
-    font-weight: 700;
-    font-size: 20px;
+    font-weight: 800;
+    font-size: 16px;
     line-height: 1.2;
+  }
+
+  .daily-tip {
+    border-radius: 26px;
+    padding: 22px 28px;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+  }
+
+  .daily-tip span {
+    min-width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    background: #9b551d;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+  }
+
+  .daily-tip strong {
+    color: #8b552b;
+    font-size: 20px;
+  }
+
+  .daily-tip p {
+    margin: 5px 0 0;
+    color: #6d5140;
+    font-size: 17px;
+    line-height: 1.4;
   }
 
   @media (max-width: 950px) {
@@ -255,9 +317,13 @@
       min-height: 100vh;
     }
 
-    .hero,
-    .benefits {
+    .hero {
+      height: auto;
       grid-template-columns: 1fr;
+    }
+
+    .left-column {
+      grid-template-rows: auto auto auto;
     }
 
     h1 {
@@ -275,6 +341,10 @@
     .primary,
     .secondary {
       width: 100%;
+    }
+
+    .benefits {
+      grid-template-columns: 1fr;
     }
   }
 </style>

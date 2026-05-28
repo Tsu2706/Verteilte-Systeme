@@ -1,91 +1,61 @@
-/** Basis-URL des FastAPI-Backends */
 const API_URL = "http://localhost:8000";
 
-// --------------------
-// Auth
-// --------------------
+export type Recipe = {
+  id: number;
+  user_id: number;
+  title: string;
+  description?: string | null;
+  ingredients: string[];
+  steps: string[];
+  is_public: boolean;
+  created_at?: string;
+  time?: string | null;
+  difficulty?: string | null;
+};
 
-export async function registerUser(username: string, email: string, password: string) {
-  const response = await fetch(`${API_URL}/auth/register`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ username, email, password })
-  });
+export type RecipeCreate = {
+  title: string;
+  description?: string;
+  ingredients: string[];
+  steps: string[];
+  is_public: boolean;
+  time?: string;
+  difficulty?: string;
+};
 
-  if (!response.ok) {
-    throw new Error("Registrierung fehlgeschlagen");
-  }
-
-  return response.json();
-}
-
-export async function loginUser(username: string, password: string) {
-  const formData = new URLSearchParams();
-  formData.append("username", username);
-  formData.append("password", password);
-
-  const response = await fetch(`${API_URL}/token`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded"
-    },
-    body: formData
-  });
-
-  if (!response.ok) {
-    throw new Error("Login fehlgeschlagen");
-  }
-
-  const data = await response.json();
-  localStorage.setItem("token", data.access_token);
-
-  return data;
-}
-
-export function logoutUser() {
-  localStorage.removeItem("token");
-}
-
-export function getToken() {
-  return localStorage.getItem("token");
-}
-
-// --------------------
-// Recipes
-// --------------------
-
-export async function getRecipes() {
+export async function getRecipes(): Promise<Recipe[]> {
   const response = await fetch(`${API_URL}/recipes`);
 
   if (!response.ok) {
-    throw new Error("Rezepte konnten nicht geladen werden");
+    throw new Error("Rezepte konnten nicht geladen werden.");
   }
 
   return response.json();
 }
-export async function getRecipe(id: string) {
+
+export async function getRecipe(id: string | number): Promise<Recipe> {
   const response = await fetch(`${API_URL}/recipes/${id}`);
 
   if (!response.ok) {
-    throw new Error("Rezept konnte nicht geladen werden");
+    throw new Error("Rezept konnte nicht geladen werden.");
   }
 
   return response.json();
 }
 
-export async function rateRecipe(id: string, rating: number) {
-  const response = await fetch(`${API_URL}/recipes/${id}/rating`, {
+export async function createRecipe(
+  recipe: RecipeCreate
+): Promise<Recipe> {
+  const response = await fetch(`${API_URL}/recipes`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
     },
-    body: JSON.stringify({ rating })
+    body: JSON.stringify(recipe)
   });
 
   if (!response.ok) {
-    throw new Error("Bewertung konnte nicht gespeichert werden");
+    throw new Error("Rezept konnte nicht gespeichert werden.");
   }
 
   return response.json();
