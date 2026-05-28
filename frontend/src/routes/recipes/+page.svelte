@@ -16,6 +16,18 @@
   let recipes = $state<Recipe[]>([]);
   let loading = $state(true);
   let error = $state("");
+  let searchTerm = $state("");
+
+  const filteredRecipes = $derived(
+    recipes.filter((recipe) => {
+      const search = searchTerm.toLowerCase().trim();
+
+      return (
+        recipe.title.toLowerCase().includes(search) ||
+        recipe.description?.toLowerCase().includes(search)
+      );
+    })
+  );
 
   onMount(async () => {
     try {
@@ -34,14 +46,24 @@
     SmartC<span class="cookie-o">🍪</span><span class="cookie-o">🍪</span>kies
   </a>
 
-  <a href="/recipes/new" class="add-button">
-    <span class="plus">+</span>
-    <span>Neues Lieblingsrezept hinzufügen</span>
-  </a>
+  <div class="top-actions">
+    <div class="search-card">
+      <span>🔍</span>
+      <input
+        type="text"
+        bind:value={searchTerm}
+        placeholder="Rezept suchen..."
+      />
+    </div>
+
+    <a href="/recipes/new" class="add-button">
+      <span class="plus">+</span>
+      <span>Neues Lieblingsrezept hinzufügen</span>
+    </a>
+  </div>
 
   <section class="hero">
     <div class="content">
-
       <h1>
         Hochgeladene Rezepte <span class="headline-cookie">🍪</span>
       </h1>
@@ -67,9 +89,15 @@
       <h2>Noch keine Rezepte vorhanden</h2>
       <p>Füge dein erstes Lieblingsrezept hinzu.</p>
     </section>
+  {:else if filteredRecipes.length === 0}
+    <section class="status-card">
+      <div class="empty-cookie">🔍</div>
+      <h2>Kein Rezept gefunden</h2>
+      <p>Probiere einen anderen Suchbegriff aus.</p>
+    </section>
   {:else}
     <section class="recipes-grid">
-      {#each recipes as recipe}
+      {#each filteredRecipes as recipe}
         <a href={`/recipes/${recipe.id}`} class="recipe-card">
           <div class="card-icon">🍪</div>
 
@@ -128,6 +156,47 @@
     margin-right: -3px;
   }
 
+  .top-actions {
+    position: fixed;
+    top: 18px;
+    right: 28px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    z-index: 10;
+  }
+
+  .search-card {
+    width: 300px;
+    min-height: 48px;
+    background: #fffaf4;
+    border-radius: 999px;
+    box-shadow: 0 12px 30px rgba(92, 55, 25, 0.12);
+    padding: 0 18px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-sizing: border-box;
+  }
+
+  .search-card span {
+    font-size: 20px;
+  }
+
+  .search-card input {
+    width: 100%;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: #4a2c1a;
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  .search-card input::placeholder {
+    color: #9b7358;
+  }
+
   .plus {
     width: 26px;
     height: 26px;
@@ -145,9 +214,6 @@
   }
 
   .add-button {
-    position: fixed;
-    top: 18px;
-    right: 28px;
     background: #9b551d;
     color: white;
     min-height: 48px;
@@ -159,7 +225,6 @@
     align-items: center;
     gap: 10px;
     box-shadow: 0 12px 30px rgba(92, 55, 25, 0.18);
-    z-index: 10;
   }
 
   .hero {
@@ -290,9 +355,16 @@
   }
 
   @media (max-width: 750px) {
-    .add-button {
+    .top-actions {
       position: static;
+      flex-direction: column;
+      align-items: stretch;
       margin: 0 0 24px;
+    }
+
+    .search-card,
+    .add-button {
+      width: 100%;
       justify-content: center;
     }
 
