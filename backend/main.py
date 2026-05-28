@@ -7,10 +7,12 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
+
 from models import Recipe, User, Rating, Tag
 from schemas import Token, UserRegister, UserResponse
 from schemas import RecipeCreate, RecipeResponse, RecipeUpdate, RatingCreate, RatingResponse, TagCreate, TagResponse
 from database import SessionLocal, Base, engine, get_db
+
 
 from auth import (
     DUMMY_HASH,
@@ -21,7 +23,6 @@ from auth import (
 )
 
 # Tabellen anlegen (falls noch nicht vorhanden)
-# Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Mein Projekt", version="0.1.0")
 
@@ -45,11 +46,31 @@ def health():
 @app.post("/auth/register", response_model=UserResponse, status_code=201)
 def register(data: UserRegister, db: Session = Depends(get_db)):
     """Neuen Benutzer anlegen. Passwort wird als Argon2-Hash gespeichert."""
-    # TODO: Implementiert diese Funktion
     # 1. Prüft, ob username oder email bereits existieren (→ 400)
     # 2. Passwort hashen mit get_password_hash()
     # 3. User-Objekt anlegen, in DB speichern, zurückgeben
-    raise HTTPException(status_code=501, detail="Noch nicht implementiert")
+    existing_user = db.query(User).filter(
+        (User.username == data.username) | (User.email == data.email)
+    ).first()
+
+    if existing_user:
+        raise HTTPException(
+            status_code=400,
+            detail="Username oder Email bereits vergeben"
+        )
+
+    user = User(
+        username=data.username,
+        email=data.email,
+        hashed_password=get_password_hash(data.password),
+    )
+
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+
+    return user
+
 
 
 @app.post("/token", response_model=Token)
@@ -61,15 +82,30 @@ def login(
     OAuth2 Password Flow: Empfängt username + password als Formular-Daten.
     Gibt einen JWT zurück.
     """
-    # TODO: Implementiert diese Funktion
     # 1. Benutzer anhand von form_data.username in der DB suchen
     # 2. Passwort mit verify_password() prüfen (Timing-Schutz: DUMMY_HASH nutzen)
     # 3. Bei Fehler: 401 zurückgeben (generische Meldung!)
     # 4. JWT mit create_access_token() erzeugen und zurückgeben
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Noch nicht implementiert",
-    )
+    user = db.query(User).filter(User.username == form_data.username).first()
+
+    if not user:
+        verify_password(form_data.password, DUMMY_HASH)
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Ungültige Zugangsdaten",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    if not verify_password(form_data.password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Ungültige Zugangsdaten",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    access_token = create_access_token({"sub": user.username})
+
+    return {"access_token": access_token, "token_type": "bearer"}
 
 
 @app.get("/my-profile", response_model=UserResponse)
@@ -78,10 +114,16 @@ def get_profile(
     db: Session = Depends(get_db),
 ):
     """Gibt das Profil des eingeloggten Benutzers zurück (geschützter Endpoint)."""
-    # TODO: Implementiert diese Funktion
     # Hinweis: current_username kommt bereits validiert aus dem JWT (via Depends)
-    raise HTTPException(status_code=501, detail="Noch nicht implementiert")
+    user = db.query(User).filter(User.username == current_username).first()
 
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail="User nicht gefunden"
+        )
+
+    return user
 
 # ---------------------------------------------------------------------------
 # TODO: Eure eigenen Endpoints hier einfügen
