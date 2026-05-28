@@ -46,7 +46,7 @@
   }
 
   .brand-link {
-    position: fixed;
+    position: absolute;
     top: 20px;
     left: 28px;
     color: #8b552b;

@@ -66,7 +66,7 @@
   }
 
   .brand-link {
-    position: fixed;
+    position: absolute;
     top: 20px;
     left: 28px;
     color: #8b552b;
@@ -187,11 +187,6 @@
     display: flex;
     flex-direction: column;
     justify-content: center;
-  }
-
-  .cookie {
-    font-size: 62px;
-    margin-bottom: 16px;
   }
 
   .cookie-card h2 {

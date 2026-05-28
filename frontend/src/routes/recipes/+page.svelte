@@ -41,7 +41,6 @@
 
   <section class="hero">
     <div class="content">
-      <p class="eyebrow">Alle Rezepte</p>
 
       <h1>
         Hochgeladene Rezepte <span class="headline-cookie">🍪</span>
@@ -108,7 +107,7 @@
   }
 
   .brand-link {
-    position: fixed;
+    position: absolute;
     top: 20px;
     left: 28px;
     color: #8b552b;
@@ -125,8 +124,8 @@
     line-height: 1;
     display: inline-flex;
     transform: translateY(1px);
-    margin-left: 2px;
-    margin-right: 2px;
+    margin-left: -3px;
+    margin-right: -3px;
   }
 
   .plus {
@@ -178,13 +177,6 @@
 
   .content {
     padding: 42px 50px;
-  }
-
-  .eyebrow {
-    color: #a35b27;
-    font-weight: 800;
-    font-size: 18px;
-    margin: 0 0 14px;
   }
 
   h1 {
