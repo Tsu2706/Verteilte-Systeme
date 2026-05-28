@@ -56,6 +56,15 @@ export function getToken() {
 // Recipes
 // --------------------
 
+export async function getRecipes() {
+  const response = await fetch(`${API_URL}/recipes`);
+
+  if (!response.ok) {
+    throw new Error("Rezepte konnten nicht geladen werden");
+  }
+
+  return response.json();
+}
 export async function getRecipe(id: string) {
   const response = await fetch(`${API_URL}/recipes/${id}`);
 
