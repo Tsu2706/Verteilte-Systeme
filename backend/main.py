@@ -6,7 +6,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-
+from sqlalchemy import or_
 
 from models import Recipe, User, Rating, Tag
 from schemas import Token, UserRegister, UserResponse
@@ -144,39 +144,47 @@ def get_profile(
 
 
 # get, patch, dlete recipe
+
 @app.get("/recipes/search")
 def filter_recipes(
+    q: str | None = None,
     tag_ids: list[int] = Query([]),
     db: Session = Depends(get_db),
-    # für auth:
-    # current_username: str | None = Depends(get_current_user)  
+    current_username: str | None = Depends(get_current_user)
 ):
     query = db.query(Recipe)
 
-    """
+    # user filter
     if current_username:
         user = db.query(User).filter(User.username == current_username).first()
         query = query.filter(
-            (Recipe.is_public == True) | (Recipe.user_id == user.id)
+            (Recipe.is_public == True) |
+            (Recipe.user_id == user.id)
         )
     else:
         query = query.filter(Recipe.is_public == True)
-    """
 
-    # aktuell ohne auth
-    query = query.filter(Recipe.is_public == True)
-    if not tag_ids:
-        return query.all()
+    # title + description filter
+    if q:
+        query = query.filter(
+            or_(
+                Recipe.title.ilike(f"%{q}%"),
+                Recipe.description.ilike(f"%{q}%")
+            )
+        )
 
-    return (
-        query
-        .join(Recipe.tags)
-        .filter(Tag.id.in_(tag_ids))
-        .group_by(Recipe.id)
-        .having(func.count(Tag.id) == len(tag_ids))
-        .all()
-    )
-"""
+    # tag filtert
+    if tag_ids:
+        query = (
+            query
+            .join(Recipe.tags)
+            .filter(Tag.id.in_(tag_ids))
+            .group_by(Recipe.id)
+            .having(func.count(Tag.id) == len(tag_ids))
+        )
+
+    return query.all()
+
 @app.get("/recipes")
 def get_recipes(
     db: Session = Depends(get_db),
@@ -195,22 +203,7 @@ def get_recipes(
     # nur public
     return query.filter(Recipe.is_public == True).all()
 
-"""
 
-@app.get("/recipes")
-def get_recipes(db: Session = Depends(get_db)):
-    return db.query(Recipe).filter(Recipe.is_public == True).all()
-
-@app.get("/recipes/{recipe_id}", response_model=RecipeResponse)
-def get_recipe(recipe_id: int, db: Session = Depends(get_db)):
-    recipe = db.query(Recipe).filter(Recipe.id == recipe_id).first()
-    if not recipe:
-        raise HTTPException(status_code=404, detail="Recipe not found")
-
-    return recipe
-    
-
-"""
 @app.post("/recipes", response_model=RecipeResponse)
 def create_recipe(
     data: RecipeCreate,
@@ -227,9 +220,11 @@ def create_recipe(
     recipe = Recipe(
         title=data.title,
         description=data.description,
-        ingredients=[i.model_dump() for i in data.ingredients],
-        steps=data.steps,
+        ingredients=data.ingredients,
+        steps=data.steps, 
         is_public=data.is_public,
+        time=data.time,
+        difficulty=data.difficulty,
         user_id=user.id
     )
     tags = db.query(Tag).filter(Tag.id.in_(data.tag_ids)).all()
@@ -241,65 +236,50 @@ def create_recipe(
     db.refresh(recipe)
 
     return recipe
-"""
-@app.post("/recipes", response_model=RecipeResponse)
-def create_recipe(
-    data: RecipeCreate,
-    db: Session = Depends(get_db)
-):
-    user = db.query(User).filter(User.username == "testuser").first()
-    if not user:
-        raise HTTPException(status_code=404, detail="Dummy user not found")
 
-    recipe = Recipe(
-        title=data.title,
-        description=data.description,
-        ingredients=[i.model_dump() for i in data.ingredients],
-        steps=data.steps,
-        is_public=data.is_public,
-        user_id=user.id
-    )
-    tags = db.query(Tag).filter(Tag.id.in_(data.tag_ids)).all()
-    recipe.tags = tags
-
-    db.add(recipe)
-    db.commit()
-    db.refresh(recipe)
-
-    return recipe
 
 @app.patch("/recipes/{recipe_id}", response_model=RecipeResponse)
 def update_recipe_partial(
     recipe_id: int,
     data: RecipeUpdate,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_username: str = Depends(get_current_user)
 ):
     recipe = db.query(Recipe).filter(Recipe.id == recipe_id).first()
 
     if not recipe:
         raise HTTPException(status_code=404, detail="Recipe not found")
 
+    user = db.query(User).filter(User.username == current_username).first()
+    if not user or recipe.user_id != user.id:
+        raise HTTPException(status_code=403, detail="Not allowed")
+
     update_data = data.model_dump(exclude_unset=True)
 
     for key, value in update_data.items():
-        if key == "ingredients":
-            setattr(recipe, key, [i.model_dump() for i in value])
-        else:
-            setattr(recipe, key, value)
+        setattr(recipe, key, value)
 
     db.commit()
     db.refresh(recipe)
 
     return recipe
 
-
 @app.delete("/recipes/{recipe_id}", status_code=204)
 def delete_recipe(
     recipe_id: int,
-    db: Session = Depends(get_db)):
+    db: Session = Depends(get_db),
+    current_username: str = Depends(get_current_user)
+):
     recipe = db.query(Recipe).filter(Recipe.id == recipe_id).first()
+
     if not recipe:
         raise HTTPException(status_code=404, detail="Recipe not found")
+
+    user = db.query(User).filter(User.username == current_username).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if recipe.user_id != user.id:
+        raise HTTPException(status_code=403, detail="Not allowed")
 
     db.delete(recipe)
     db.commit()
@@ -317,12 +297,9 @@ def rate_recipe(
     if not recipe:
         raise HTTPException(status_code=404, detail="Recipe not found")
 
-    user = db.query(User).filter(User.username == "testuser").first()
-    # mit authent ersetzen durch
-    """
     current_username: str = Depends(get_current_user)
     user = db.query(User).filter(User.username == current_username).first()
-    """
+    
 
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -372,22 +349,3 @@ def create_tag(data: TagCreate, db: Session = Depends(get_db)):
 def get_tags(db: Session = Depends(get_db)):
     return db.query(Tag).all()
 
-
-
-# dummy user
-@app.on_event("startup")
-def create_dummy_user():
-    db = SessionLocal()
-
-    user = db.query(User).filter(User.username == "testuser").first()
-
-    if not user:
-        user = User(
-            username="testuser",
-            email="test@test.com",
-            hashed_password="dummy"
-        )
-        db.add(user)
-        db.commit()
-
-    db.close()

@@ -33,10 +33,6 @@ class Token(BaseModel):
 #     price: int
 #     model_config = {"from_attributes": True}
 
-class Ingredient(BaseModel):
-    name: str
-    amount: float
-    unit: str
 
 # tags
 class TagCreate(BaseModel):
@@ -52,20 +48,24 @@ class TagResponse(BaseModel):
 class RecipeCreate(BaseModel):
     title: str
     description: str | None = None
-    ingredients: list[Ingredient]
-    steps: list[str]
+    ingredients: list[str]  
+    steps: list[str]  
     is_public: bool = True
     tag_ids: list[int] = []
+    time: str | None = None
+    difficulty: str | None = None
 
 class RecipeResponse(BaseModel):
     id: int
     user_id: int
     title: str
     description: str | None
-    ingredients: list[Ingredient]
-    steps: list[str]
+    ingredients: list[str]  
+    steps: list[str]  
     is_public: bool
     tags: list[TagResponse]  
+    time: str | None = None
+    difficulty: str | None = None
 
     model_config = {"from_attributes": True}
 
@@ -74,9 +74,11 @@ class RecipeResponse(BaseModel):
 class RecipeUpdate(BaseModel):
     title: str | None = None
     description: str | None = None
-    ingredients: list[Ingredient] | None = None
-    steps: list[str] | None = None
+    ingredients: list[str]   | None = None
+    steps: list[str]   | None = None
     is_public: bool | None = None
+    time: str | None = None
+    difficulty: str | None = None
 
 # rating
 class RatingCreate(BaseModel):

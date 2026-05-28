@@ -26,15 +26,18 @@ class Recipe(Base):
     __tablename__="recipes"
 
     id=Column(Integer,primary_key=True,index=True)
-    # user_id=Column(Integer,ForeignKey("users.id"),nullable=False)
-    user_id = Column(Integer, nullable=True)
+    user_id=Column(Integer,ForeignKey("users.id"),nullable=False)
     title=Column(String(200),nullable=False)
     description=Column(String(200))
     ingredients=Column(JSON,nullable=False)
-    steps=Column(JSON,nullable=False)
+    # ingredients=Column(String,nullable=False)
+    steps=Column(JSON, nullable=False) 
+    # steps=Column(String,nullable=False)
     is_public=Column(Boolean,default=True)
     created_at=Column(DateTime(timezone=True),server_default=func.now())
     tags = relationship("Tag", secondary=recipe_tags, back_populates="recipes")
+    time = Column(String, nullable=True)
+    difficulty = Column(String, nullable=True)
 
 
 class Tag(Base):
