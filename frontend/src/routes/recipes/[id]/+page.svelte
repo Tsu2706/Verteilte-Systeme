@@ -17,7 +17,7 @@
     }
 
     try {
-      recipe = await getRecipe(id);
+      recipe = await getRecipe(Number(id));
     } catch (err) {
       error = "Rezept konnte nicht geladen werden.";
       console.error(err);
@@ -33,7 +33,17 @@
   </a>
 
   <section class="detail-card">
-    <a href="/recipes" class="back-link">← Zurück zu den Rezepten</a>
+    <div class="top-actions">
+      <a href="/recipes" class="back-link">
+        ← Zurück zu den Rezepten
+      </a>
+
+      {#if recipe}
+        <a href={`/recipes/${recipe.id}/edit`} class="edit-button">
+          Rezept bearbeiten
+        </a>
+      {/if}
+    </div>
 
     {#if loading}
       <div class="status-card">
@@ -47,7 +57,7 @@
       <div class="recipe-header">
         <div>
           <p class="eyebrow">
-            {recipe.is_public ? "Öffentliches Rezept" : "Privates Rezept"}
+            Öffentliches Rezept
           </p>
 
           <h1>{recipe.title}</h1>
@@ -74,28 +84,14 @@
             <p>{recipe.difficulty}</p>
           </div>
         {/if}
-
-        <div class="meta-card">
-          <span>🥣</span>
-          <p>{recipe.ingredients?.length ?? 0} Zutaten</p>
-        </div>
-
-        <div class="meta-card">
-          <span>👣</span>
-          <p>{recipe.steps?.length ?? 0} Schritte</p>
-        </div>
       </div>
 
       <div class="content-grid">
         <section class="info-box">
           <h2>Zutaten</h2>
 
-          {#if recipe.ingredients?.length}
-            <ul>
-              {#each recipe.ingredients as ingredient}
-                <li>{ingredient}</li>
-              {/each}
-            </ul>
+          {#if recipe.ingredients}
+            <p>{recipe.ingredients}</p>
           {:else}
             <p>Keine Zutaten vorhanden.</p>
           {/if}
@@ -104,12 +100,8 @@
         <section class="info-box">
           <h2>Zubereitung</h2>
 
-          {#if recipe.steps?.length}
-            <ol>
-              {#each recipe.steps as step}
-                <li>{step}</li>
-              {/each}
-            </ol>
+          {#if recipe.instructions}
+            <p>{recipe.instructions}</p>
           {:else}
             <p>Keine Zubereitungsschritte vorhanden.</p>
           {/if}
@@ -163,12 +155,28 @@
     box-shadow: 0 12px 30px rgba(92, 55, 25, 0.12);
   }
 
-  .back-link {
-    display: inline-block;
+  .top-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 18px;
     margin-bottom: 34px;
+  }
+
+  .back-link {
     color: #9b551d;
     text-decoration: none;
     font-weight: 800;
+  }
+
+  .edit-button {
+    text-decoration: none;
+    background: #3d2415;
+    color: white;
+    padding: 14px 22px;
+    border-radius: 999px;
+    font-weight: 900;
+    box-shadow: 0 12px 26px rgba(61, 36, 21, 0.22);
   }
 
   .recipe-header {
@@ -241,7 +249,7 @@
   .content-grid {
     margin-top: 28px;
     display: grid;
-    grid-template-columns: 0.8fr 1.2fr;
+    grid-template-columns: 1fr 1fr;
     gap: 22px;
   }
 
@@ -257,24 +265,13 @@
     font-size: 28px;
   }
 
-  ul,
-  ol {
-    margin: 0;
-    padding-left: 22px;
-    color: #6d5140;
-    font-size: 17px;
-    line-height: 1.6;
-  }
-
-  li {
-    margin-bottom: 10px;
-  }
-
   .info-box p,
   .status-card p {
     margin: 0;
     color: #6d5140;
     font-size: 18px;
+    line-height: 1.7;
+    white-space: pre-line;
   }
 
   .status-card {
@@ -296,8 +293,10 @@
       padding: 28px;
     }
 
+    .top-actions,
     .recipe-header {
       flex-direction: column;
+      align-items: flex-start;
     }
 
     h1 {
@@ -312,6 +311,12 @@
       min-width: 74px;
       height: 74px;
       font-size: 42px;
+    }
+
+    .edit-button {
+      width: 100%;
+      text-align: center;
+      box-sizing: border-box;
     }
   }
 </style>
