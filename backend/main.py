@@ -246,6 +246,18 @@ def create_recipe(
 
     return recipe
 
+@app.get("/users/me/recipes", response_model=list[RecipeResponse])
+def get_my_recipes(
+    db: Session = Depends(get_db),
+    current_username: str = Depends(get_current_user)
+):
+    user = db.query(User).filter(User.username == current_username).first()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    return db.query(Recipe).filter(Recipe.user_id == user.id).all()
+
 
 @app.patch("/recipes/{recipe_id}", response_model=RecipeResponse)
 def update_recipe_partial(
