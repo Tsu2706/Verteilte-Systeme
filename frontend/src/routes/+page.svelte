@@ -63,11 +63,7 @@
     </div>
 
     <div class="cookie-card">
-      <img
-        src="/images/portrait.png"
-        alt="SmartCookies Team"
-        class="team-image"
-      />
+      <img src="/images/portrait.png" alt="SmartCookies Team" class="team-image" />
 
       <h2>Smart geplant. Einfach gekocht.</h2>
       <p>Mit SmartCookies findest du schneller das passende Rezept für deinen Tag.</p>
@@ -219,7 +215,6 @@
     height: auto;
     object-fit: contain;
     margin: 0 auto 32px;
-
     border-radius: 28px;
     filter: drop-shadow(0 18px 28px rgba(59, 36, 20, 0.18));
   }
@@ -308,10 +303,6 @@
   }
 
   @media (max-width: 950px) {
-    :global(body) {
-      overflow: auto;
-    }
-
     .home {
       height: auto;
       min-height: 100vh;

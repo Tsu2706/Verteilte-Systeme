@@ -61,3 +61,26 @@ Die Swagger UI unter `http://localhost:8000/docs` hat einen eingebauten **Author
 1. Benutzer anlegen: `POST /auth/register`
 2. Einloggen: Authorize-Button klicken → username + password eingeben
 3. Geschützte Endpoints wie `GET /my-profile` aufrufen
+
+
+## Aktueller Stand backend
+RECIPES
+- Rezepte erstellen
+- Rezepte abrufen 
+- Einzelnes Rezept abrufen
+- Rezepte updaten 
+- Rezepte löschen
+
+TAGS
+- Tags erstellen
+- Tags abrufen
+- m:n Beziehung (Recipes & Tags)
+- Mehrere Tags pro Rezept möglich
+
+SEARCH / FILTER
+- Filter nach Tag-IDs mit and-Logik
+- Search Endpoint (/recipes/search)
+
+RATINGS
+- Bewertung von Rezepten (1–5)
+- Rating erstellen

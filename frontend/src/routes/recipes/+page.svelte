@@ -53,7 +53,7 @@
 <main class="recipes-page">
   <header class="topbar">
     <a href="/" class="brand-link">
-      SmartC<span>🍪</span><span>🍪</span>kies
+      SmartC<span class="cookie-o">🍪</span><span class="cookie-o">🍪</span>kies
     </a>
 
     <div class="search-area">
@@ -140,6 +140,15 @@
     color: #3b2416;
     font-size: 26px;
     font-weight: 800;
+  }
+
+  .cookie-o {
+    font-size: 0.72em;
+    line-height: 1;
+    display: inline-flex;
+    transform: translateY(-0.5px);
+    margin-left: -3px;
+    margin-right: -3px;
   }
 
   .search-area {

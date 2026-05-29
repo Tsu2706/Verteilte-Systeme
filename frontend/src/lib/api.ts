@@ -73,16 +73,21 @@ export async function getRecipes(): Promise<Recipe[]> {
   const response = await fetch(`${API_BASE_URL}/recipes`, {
     headers: authHeaders()
   });
+
   return handleResponse(response);
 }
 
 export async function searchRecipes(q: string): Promise<Recipe[]> {
   const params = new URLSearchParams();
-  if (q.trim()) params.set("q", q.trim());
+
+  if (q.trim()) {
+    params.set("q", q.trim());
+  }
 
   const response = await fetch(`${API_BASE_URL}/recipes/search?${params.toString()}`, {
     headers: authHeaders()
   });
+
   return handleResponse(response);
 }
 
@@ -90,6 +95,7 @@ export async function getRecipe(id: number): Promise<Recipe> {
   const response = await fetch(`${API_BASE_URL}/recipes/${id}`, {
     headers: authHeaders()
   });
+
   return handleResponse(response);
 }
 
@@ -97,7 +103,10 @@ export async function createRecipe(data: RecipeInput): Promise<Recipe> {
   const response = await fetch(`${API_BASE_URL}/recipes`, {
     method: "POST",
     headers: authHeaders(),
-    body: JSON.stringify({ ...data, tag_ids: data.tag_ids ?? [] })
+    body: JSON.stringify({
+      ...data,
+      tag_ids: data.tag_ids ?? []
+    })
   });
 
   return handleResponse(response);
@@ -139,7 +148,10 @@ export async function getMyRecipes(): Promise<Recipe[]> {
 }
 
 export function logout() {
-  if (browser) localStorage.removeItem("token");
+  if (browser) {
+    localStorage.removeItem("token");
+  }
+
   window.location.href = "/login";
 }
 
@@ -157,7 +169,10 @@ export async function login(username: string, password: string) {
   });
 
   const data = await handleResponse(response);
-  if (browser) localStorage.setItem("token", data.access_token);
+
+  if (browser) {
+    localStorage.setItem("token", data.access_token);
+  }
 
   return data;
 }
@@ -168,7 +183,11 @@ export async function register(username: string, email: string, password: string
     headers: {
       "Content-Type": "application/json"
     },
-    body: JSON.stringify({ username, email, password })
+    body: JSON.stringify({
+      username,
+      email,
+      password
+    })
   });
 
   return handleResponse(response);

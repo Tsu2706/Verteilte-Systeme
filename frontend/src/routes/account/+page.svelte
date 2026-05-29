@@ -39,7 +39,7 @@
 
 <main class="account-page">
   <a href="/" class="brand-link">
-    SmartC<span>🍪</span><span>🍪</span>kies
+    SmartC<span class="cookie-o">🍪</span><span class="cookie-o">🍪</span>kies
   </a>
 
   <section class="account-card">
@@ -125,6 +125,15 @@
     text-decoration: none;
     color: #8b4a24;
     font-weight: 800;
+  }
+
+  .cookie-o {
+    font-size: 0.72em;
+    line-height: 1;
+    display: inline-flex;
+    transform: translateY(-2px);
+    margin-left: -3px;
+    margin-right: -3px;
   }
 
   button,
