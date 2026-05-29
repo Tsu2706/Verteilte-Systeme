@@ -10,23 +10,30 @@ from sqlalchemy import or_
 
 from models import Recipe, User, Rating, Tag
 from schemas import Token, UserRegister, UserResponse
-from schemas import RecipeCreate, RecipeResponse, RecipeUpdate, RatingCreate, RatingResponse, TagCreate, TagResponse
-from database import SessionLocal, Base, engine, get_db
-
+from schemas import (
+    RecipeCreate,
+    RecipeResponse,
+    RecipeUpdate,
+    RatingCreate,
+    RatingResponse,
+    TagCreate,
+    TagResponse,
+)
+from database import Base, engine, get_db
 
 from auth import (
     DUMMY_HASH,
     create_access_token,
     get_current_user,
+    get_current_user_optional,
     get_password_hash,
     verify_password,
 )
 
-# Tabellen anlegen (falls noch nicht vorhanden)
 
 app = FastAPI(title="Mein Projekt", version="0.1.0")
 
-#CORS aktivieren
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173"],
@@ -35,10 +42,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# option to make it safer
+
 @app.on_event("startup")
 def startup():
     Base.metadata.create_all(bind=engine)
+
+
 # ---------------------------------------------------------------------------
 # Health Check
 # ---------------------------------------------------------------------------
@@ -54,10 +63,6 @@ def health():
 
 @app.post("/auth/register", response_model=UserResponse, status_code=201)
 def register(data: UserRegister, db: Session = Depends(get_db)):
-    """Neuen Benutzer anlegen. Passwort wird als Argon2-Hash gespeichert."""
-    # 1. Prüft, ob username oder email bereits existieren (→ 400)
-    # 2. Passwort hashen mit get_password_hash()
-    # 3. User-Objekt anlegen, in DB speichern, zurückgeben
     existing_user = db.query(User).filter(
         (User.username == data.username) | (User.email == data.email)
     ).first()
@@ -81,20 +86,11 @@ def register(data: UserRegister, db: Session = Depends(get_db)):
     return user
 
 
-
 @app.post("/token", response_model=Token)
 def login(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     db: Session = Depends(get_db),
 ):
-    """
-    OAuth2 Password Flow: Empfängt username + password als Formular-Daten.
-    Gibt einen JWT zurück.
-    """
-    # 1. Benutzer anhand von form_data.username in der DB suchen
-    # 2. Passwort mit verify_password() prüfen (Timing-Schutz: DUMMY_HASH nutzen)
-    # 3. Bei Fehler: 401 zurückgeben (generische Meldung!)
-    # 4. JWT mit create_access_token() erzeugen und zurückgeben
     user = db.query(User).filter(User.username == form_data.username).first()
 
     if not user:
@@ -122,8 +118,6 @@ def get_profile(
     current_username: Annotated[str, Depends(get_current_user)],
     db: Session = Depends(get_db),
 ):
-    """Gibt das Profil des eingeloggten Benutzers zurück (geschützter Endpoint)."""
-    # Hinweis: current_username kommt bereits validiert aus dem JWT (via Depends)
     user = db.query(User).filter(User.username == current_username).first()
 
     if not user:
@@ -134,46 +128,33 @@ def get_profile(
 
     return user
 
+
 # ---------------------------------------------------------------------------
-# TODO: Eure eigenen Endpoints hier einfügen
+# Rezepte
 # ---------------------------------------------------------------------------
 
-# Beispiel:
-# @app.get("/items")
-# def get_items(db: Session = Depends(get_db)):
-#     return db.query(Item).all()
-#
-# @app.post("/items", status_code=201)
-# def create_item(data: ItemCreate, db: Session = Depends(get_db)):
-#     item = Item(**data.model_dump())
-#     db.add(item)
-#     db.commit()
-#     db.refresh(item)
-#     return item
-
-
-# get, patch, dlete recipe
-
-@app.get("/recipes/search")
+@app.get("/recipes/search", response_model=list[RecipeResponse])
 def filter_recipes(
     q: str | None = None,
     tag_ids: list[int] = Query([]),
     db: Session = Depends(get_db),
-    current_username: str | None = Depends(get_current_user)
+    current_username: str | None = Depends(get_current_user_optional),
 ):
     query = db.query(Recipe)
 
-    # user filter
     if current_username:
         user = db.query(User).filter(User.username == current_username).first()
-        query = query.filter(
-            (Recipe.is_public == True) |
-            (Recipe.user_id == user.id)
-        )
+
+        if user:
+            query = query.filter(
+                (Recipe.is_public == True) |
+                (Recipe.user_id == user.id)
+            )
+        else:
+            query = query.filter(Recipe.is_public == True)
     else:
         query = query.filter(Recipe.is_public == True)
 
-    # title + description filter
     if q:
         query = query.filter(
             or_(
@@ -182,7 +163,6 @@ def filter_recipes(
             )
         )
 
-    # tag filtert
     if tag_ids:
         query = (
             query
@@ -194,80 +174,87 @@ def filter_recipes(
 
     return query.all()
 
-@app.get("/recipes")
+
+@app.get("/recipes", response_model=list[RecipeResponse])
 def get_recipes(
     db: Session = Depends(get_db),
-    current_username: str | None = Depends(get_current_user)
+    current_username: str | None = Depends(get_current_user_optional),
 ):
     query = db.query(Recipe)
 
     if current_username:
         user = db.query(User).filter(User.username == current_username).first()
 
-        # public + private
-        return query.filter(
-            (Recipe.is_public == True) |
-            (Recipe.user_id == user.id)
-        ).all()
-    # nur public
+        if user:
+            return query.filter(
+                (Recipe.is_public == True) |
+                (Recipe.user_id == user.id)
+            ).all()
+
     return query.filter(Recipe.is_public == True).all()
+
 
 @app.get("/recipes/{recipe_id}", response_model=RecipeResponse)
 def get_recipe(
     recipe_id: int,
     db: Session = Depends(get_db),
-    current_username: str = Depends(get_current_user)
+    current_username: str | None = Depends(get_current_user_optional),
 ):
     recipe = db.query(Recipe).filter(Recipe.id == recipe_id).first()
 
     if not recipe:
         raise HTTPException(status_code=404, detail="Recipe not found")
 
+    if recipe.is_public:
+        return recipe
+
+    if not current_username:
+        raise HTTPException(status_code=401, detail="Login required")
+
     user = db.query(User).filter(User.username == current_username).first()
 
-    # Zugriff erlauben: public ODER eigenes Rezept
-    if not recipe.is_public and recipe.user_id != user.id:
+    if not user or recipe.user_id != user.id:
         raise HTTPException(status_code=403, detail="Not allowed")
 
     return recipe
+
 
 @app.post("/recipes", response_model=RecipeResponse)
 def create_recipe(
     data: RecipeCreate,
     db: Session = Depends(get_db),
-    current_username: str = Depends(get_current_user)
+    current_username: str = Depends(get_current_user),
 ):
-    # get user
     user = db.query(User).filter(User.username == current_username).first()
 
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # build recipe
     recipe = Recipe(
         title=data.title,
         description=data.description,
         ingredients=data.ingredients,
-        steps=data.steps, 
+        steps=data.steps,
         is_public=data.is_public,
         time=data.time,
         difficulty=data.difficulty,
-        user_id=user.id
+        user_id=user.id,
     )
+
     tags = db.query(Tag).filter(Tag.id.in_(data.tag_ids)).all()
     recipe.tags = tags
 
-    # save db
     db.add(recipe)
     db.commit()
     db.refresh(recipe)
 
     return recipe
 
+
 @app.get("/users/me/recipes", response_model=list[RecipeResponse])
 def get_my_recipes(
     db: Session = Depends(get_db),
-    current_username: str = Depends(get_current_user)
+    current_username: str = Depends(get_current_user),
 ):
     user = db.query(User).filter(User.username == current_username).first()
 
@@ -282,7 +269,7 @@ def update_recipe_partial(
     recipe_id: int,
     data: RecipeUpdate,
     db: Session = Depends(get_db),
-    current_username: str = Depends(get_current_user)
+    current_username: str = Depends(get_current_user),
 ):
     recipe = db.query(Recipe).filter(Recipe.id == recipe_id).first()
 
@@ -290,6 +277,7 @@ def update_recipe_partial(
         raise HTTPException(status_code=404, detail="Recipe not found")
 
     user = db.query(User).filter(User.username == current_username).first()
+
     if not user or recipe.user_id != user.id:
         raise HTTPException(status_code=403, detail="Not allowed")
 
@@ -303,11 +291,12 @@ def update_recipe_partial(
 
     return recipe
 
+
 @app.delete("/recipes/{recipe_id}", status_code=204)
 def delete_recipe(
     recipe_id: int,
     db: Session = Depends(get_db),
-    current_username: str = Depends(get_current_user)
+    current_username: str = Depends(get_current_user),
 ):
     recipe = db.query(Recipe).filter(Recipe.id == recipe_id).first()
 
@@ -315,8 +304,10 @@ def delete_recipe(
         raise HTTPException(status_code=404, detail="Recipe not found")
 
     user = db.query(User).filter(User.username == current_username).first()
+
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+
     if recipe.user_id != user.id:
         raise HTTPException(status_code=403, detail="Not allowed")
 
@@ -325,15 +316,18 @@ def delete_recipe(
 
     return None
 
-# ratings
+
+# ---------------------------------------------------------------------------
+# Ratings
+# ---------------------------------------------------------------------------
+
 @app.post("/recipes/{recipe_id}/ratings", response_model=RatingResponse)
 def rate_recipe(
     recipe_id: int,
     data: RatingCreate,
     db: Session = Depends(get_db),
-    current_username: str = Depends(get_current_user)
+    current_username: str = Depends(get_current_user),
 ):
-
     recipe = db.query(Recipe).filter(Recipe.id == recipe_id).first()
     user = db.query(User).filter(User.username == current_username).first()
 
@@ -367,7 +361,9 @@ def rate_recipe(
     return rating
 
 
-#tags
+# ---------------------------------------------------------------------------
+# Tags
+# ---------------------------------------------------------------------------
 
 @app.post("/tags", response_model=TagResponse)
 def create_tag(data: TagCreate, db: Session = Depends(get_db)):
@@ -384,7 +380,7 @@ def create_tag(data: TagCreate, db: Session = Depends(get_db)):
 
     return tag
 
+
 @app.get("/tags", response_model=list[TagResponse])
 def get_tags(db: Session = Depends(get_db)):
     return db.query(Tag).all()
-
