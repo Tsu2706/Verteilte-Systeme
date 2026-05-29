@@ -1,6 +1,6 @@
 <script lang="ts">
   import { browser } from "$app/environment";
-  import { createRecipe } from "$lib/api";
+  import { createRecipe, getTags, createTag, type Tag } from "$lib/api";
 
   let title = $state("");
   let description = $state("");
@@ -9,20 +9,63 @@
   let ingredientsText = $state("");
   let stepsText = $state("");
   let isPublic = $state(true);
+
+  let tags = $state<Tag[]>([]);
+  let selectedTagIds = $state<number[]>([]);
+  let newTagName = $state("");
+
   let error = $state("");
   let success = $state("");
 
   $effect(() => {
-    if (browser && !localStorage.getItem("token")) {
-      window.location.href = "/login";
+    if (browser) {
+      if (!localStorage.getItem("token")) {
+        window.location.href = "/login";
+        return;
+      }
+
+      loadTags();
     }
   });
+
+  async function loadTags() {
+    try {
+      tags = await getTags();
+    } catch {
+      tags = [];
+    }
+  }
 
   function linesToArray(value: string) {
     return value
       .split("\n")
       .map((line) => line.trim())
       .filter(Boolean);
+  }
+
+  function toggleTag(tagId: number) {
+    if (selectedTagIds.includes(tagId)) {
+      selectedTagIds = selectedTagIds.filter((id) => id !== tagId);
+    } else {
+      selectedTagIds = [...selectedTagIds, tagId];
+    }
+  }
+
+  async function handleCreateTag() {
+    error = "";
+
+    if (!newTagName.trim()) {
+      return;
+    }
+
+    try {
+      const tag = await createTag(newTagName.trim());
+      tags = [...tags, tag];
+      selectedTagIds = [...selectedTagIds, tag.id];
+      newTagName = "";
+    } catch (err) {
+      error = err instanceof Error ? err.message : "Tag konnte nicht erstellt werden.";
+    }
   }
 
   async function handleSubmit() {
@@ -38,7 +81,7 @@
         ingredients: linesToArray(ingredientsText),
         steps: linesToArray(stepsText),
         is_public: isPublic,
-        tag_ids: []
+        tag_ids: selectedTagIds
       });
 
       success = "Rezept wurde erfolgreich gespeichert.";
@@ -58,7 +101,7 @@
     <a href="/recipes" class="back-link">← Zurück zu den Rezepten</a>
 
     <h1>Neues Rezept</h1>
-    <p>Erstelle ein neues Rezept für SmartCookies.</p>
+    <p>Erstelle ein neues Rezept und ordne passende Tags/Kategorien zu.</p>
 
     {#if error}
       <div class="error">{error}</div>
@@ -96,6 +139,37 @@
         </div>
       </div>
 
+      <section class="tag-section">
+        <p class="section-label">Tags / Kategorien</p>
+
+        {#if tags.length > 0}
+          <div class="tag-list">
+            {#each tags as tag}
+              <button
+                type="button"
+                class:active={selectedTagIds.includes(tag.id)}
+                onclick={() => toggleTag(tag.id)}
+              >
+                {tag.name}
+              </button>
+            {/each}
+          </div>
+        {:else}
+          <p class="small-info">Noch keine Tags vorhanden.</p>
+        {/if}
+
+        <div class="new-tag-row">
+          <input
+            bind:value={newTagName}
+            placeholder="Neuen Tag erstellen, z. B. Vegan"
+          />
+
+          <button type="button" class="tag-create-button" onclick={handleCreateTag}>
+            Tag hinzufügen
+          </button>
+        </div>
+      </section>
+
       <label for="ingredients">Zutaten</label>
       <textarea
         id="ingredients"
@@ -117,7 +191,7 @@
         Rezept öffentlich anzeigen
       </label>
 
-      <button type="submit">Rezept speichern</button>
+      <button type="submit" class="submit-button">Rezept speichern</button>
     </form>
   </section>
 </main>
@@ -142,13 +216,10 @@
     font-weight: 800;
   }
 
-  .form-card {
-    max-width: 760px;
-    margin: 0 auto;
-    background: white;
-    border-radius: 28px;
-    padding: 38px;
-    box-shadow: 0 18px 45px rgba(80, 45, 20, 0.14);
+  .section-label {
+    margin: 0;
+    font-weight: 800;
+    color: #3b2416;
   }
 
   .cookie-o {
@@ -158,6 +229,15 @@
     transform: translateY(-2px);
     margin-left: -3px;
     margin-right: -3px;
+  }
+
+  .form-card {
+    max-width: 760px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 28px;
+    padding: 38px;
+    box-shadow: 0 18px 45px rgba(80, 45, 20, 0.14);
   }
 
   .back-link {
@@ -214,6 +294,61 @@
     gap: 13px;
   }
 
+  .tag-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 20px;
+    border-radius: 22px;
+    background: #fff7ec;
+    border: 1px solid #f0dfcd;
+  }
+
+  .tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .tag-list button {
+    border: 1px solid #ead8c3;
+    border-radius: 999px;
+    background: #fffaf4;
+    color: #7a5a43;
+    padding: 9px 14px;
+    cursor: pointer;
+    font-weight: 700;
+  }
+
+  .tag-list button.active {
+    background: #8b4a24;
+    color: white;
+    border-color: #8b4a24;
+  }
+
+  .new-tag-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 12px;
+    margin-top: 4px;
+  }
+
+  .tag-create-button {
+    border: none;
+    border-radius: 999px;
+    padding: 0 16px;
+    background: #f2ddc7;
+    color: #6f3719;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .small-info {
+    margin: 0;
+    color: #7a5a43;
+    font-size: 14px;
+  }
+
   .checkbox {
     display: flex;
     align-items: center;
@@ -226,7 +361,7 @@
     height: 18px;
   }
 
-  button {
+  .submit-button {
     margin-top: 16px;
     border: none;
     border-radius: 999px;
@@ -237,7 +372,7 @@
     cursor: pointer;
   }
 
-  button:hover {
+  .submit-button:hover {
     background: #6f3719;
   }
 
@@ -259,8 +394,13 @@
   }
 
   @media (max-width: 700px) {
-    .row {
+    .row,
+    .new-tag-row {
       grid-template-columns: 1fr;
+    }
+
+    .tag-create-button {
+      padding: 13px 16px;
     }
 
     .form-card {

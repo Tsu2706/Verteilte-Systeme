@@ -1,12 +1,16 @@
 <script lang="ts">
   import { browser } from "$app/environment";
   import { page } from "$app/stores";
-  import { getRecipe, deleteRecipe, type Recipe } from "$lib/api";
+  import { getRecipe, deleteRecipe, rateRecipe, type Recipe } from "$lib/api";
 
   let recipe = $state<Recipe | null>(null);
   let loading = $state(true);
   let error = $state("");
   let isLoggedIn = $state(false);
+
+  let selectedRating = $state(0);
+  let ratingMessage = $state("");
+  let ratingError = $state("");
 
   async function loadRecipe() {
     loading = true;
@@ -33,6 +37,21 @@
       window.location.href = "/recipes";
     } catch (err) {
       error = err instanceof Error ? err.message : "Rezept konnte nicht gelöscht werden.";
+    }
+  }
+
+  async function handleRating(value: number) {
+    if (!recipe) return;
+
+    ratingMessage = "";
+    ratingError = "";
+    selectedRating = value;
+
+    try {
+      await rateRecipe(recipe.id, value);
+      ratingMessage = `Danke! Du hast dieses Rezept mit ${value} von 5 Sternen bewertet.`;
+    } catch (err) {
+      ratingError = err instanceof Error ? err.message : "Bewertung konnte nicht gespeichert werden.";
     }
   }
 
@@ -83,6 +102,41 @@
         <span>{recipe.ingredients?.length || 0} Zutaten</span>
         <span>{recipe.steps?.length || 0} Schritte</span>
       </div>
+
+      <section class="rating-section">
+        <h2>Bewertung</h2>
+
+        {#if isLoggedIn}
+          <p class="rating-text">Wie gefällt dir dieses Rezept?</p>
+
+          <div class="stars" aria-label="Rezept bewerten">
+            {#each [1, 2, 3, 4, 5] as value}
+              <button
+                type="button"
+                class:active={value <= selectedRating}
+                onclick={() => handleRating(value)}
+                aria-label={`${value} Sterne vergeben`}
+              >
+                ★
+              </button>
+            {/each}
+          </div>
+
+          {#if ratingMessage}
+            <p class="rating-success">{ratingMessage}</p>
+          {/if}
+
+          {#if ratingError}
+            <p class="rating-error">{ratingError}</p>
+          {/if}
+        {:else}
+          <p class="rating-text">
+            Logge dich ein, um dieses Rezept mit 1 bis 5 Sternen zu bewerten.
+          </p>
+
+          <a href="/login" class="login-rating-link">Zum Login</a>
+        {/if}
+      </section>
 
       <section class="content-section">
         <h2>Zutaten</h2>
@@ -226,6 +280,76 @@
   .delete-button {
     background: #ffe6e6;
     color: #9b1c1c;
+  }
+
+  .rating-section {
+    margin-top: 32px;
+    padding: 24px;
+    border-radius: 24px;
+    background: #fff7ec;
+    border: 1px solid #f0dfcd;
+  }
+
+  .rating-section h2 {
+    margin-bottom: 8px;
+  }
+
+  .rating-text {
+    margin: 0 0 14px;
+    color: #7a5a43;
+    line-height: 1.5;
+  }
+
+  .stars {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .stars button {
+    border: none;
+    background: #f2ddc7;
+    color: #b78964;
+    width: 44px;
+    height: 44px;
+    border-radius: 999px;
+    font-size: 24px;
+    cursor: pointer;
+    transition: transform 0.15s ease, background 0.15s ease, color 0.15s ease;
+  }
+
+  .stars button:hover {
+    transform: translateY(-2px);
+    background: #8b4a24;
+    color: white;
+  }
+
+  .stars button.active {
+    background: #8b4a24;
+    color: white;
+  }
+
+  .rating-success {
+    margin: 10px 0 0;
+    color: #2f7d32;
+    font-weight: 700;
+  }
+
+  .rating-error {
+    margin: 10px 0 0;
+    color: #9b1c1c;
+    font-weight: 700;
+  }
+
+  .login-rating-link {
+    display: inline-flex;
+    margin-top: 4px;
+    background: #8b4a24;
+    color: white;
+    text-decoration: none;
+    padding: 10px 16px;
+    border-radius: 999px;
+    font-weight: 800;
   }
 
   .content-section {

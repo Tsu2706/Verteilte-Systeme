@@ -31,6 +31,18 @@ export type RecipeInput = {
   difficulty?: string | null;
 };
 
+export type Rating = {
+  id: number;
+  user_id: number;
+  recipe_id: number;
+  rating: number;
+};
+
+export type RatingSummary = {
+  average: number;
+  count: number;
+};
+
 export type User = {
   id: number;
   username: string;
@@ -77,11 +89,23 @@ export async function getRecipes(): Promise<Recipe[]> {
   return handleResponse(response);
 }
 
-export async function searchRecipes(q: string): Promise<Recipe[]> {
+export async function searchRecipes(
+  q: string,
+  ingredient: string = "",
+  tagIds: number[] = []
+): Promise<Recipe[]> {
   const params = new URLSearchParams();
 
   if (q.trim()) {
     params.set("q", q.trim());
+  }
+
+  if (ingredient.trim()) {
+    params.set("ingredient", ingredient.trim());
+  }
+
+  for (const tagId of tagIds) {
+    params.append("tag_ids", String(tagId));
   }
 
   const response = await fetch(`${API_BASE_URL}/recipes/search?${params.toString()}`, {
@@ -129,6 +153,42 @@ export async function deleteRecipe(id: number): Promise<void> {
   });
 
   await handleResponse(response);
+}
+
+export async function rateRecipe(recipeId: number, rating: number): Promise<Rating> {
+  const response = await fetch(`${API_BASE_URL}/recipes/${recipeId}/ratings`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify({ rating })
+  });
+
+  return handleResponse(response);
+}
+
+export async function getRecipeRatings(recipeId: number): Promise<RatingSummary> {
+  const response = await fetch(`${API_BASE_URL}/recipes/${recipeId}/ratings`, {
+    headers: authHeaders()
+  });
+
+  return handleResponse(response);
+}
+
+export async function getTags(): Promise<Tag[]> {
+  const response = await fetch(`${API_BASE_URL}/tags`, {
+    headers: authHeaders()
+  });
+
+  return handleResponse(response);
+}
+
+export async function createTag(name: string): Promise<Tag> {
+  const response = await fetch(`${API_BASE_URL}/tags`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify({ name })
+  });
+
+  return handleResponse(response);
 }
 
 export async function getMe(): Promise<User> {

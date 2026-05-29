@@ -5,8 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
 
 from sqlalchemy.orm import Session
-from sqlalchemy import func
-from sqlalchemy import or_
+from sqlalchemy import func, or_, cast, String
 
 from models import Recipe, User, Rating, Tag
 from schemas import Token, UserRegister, UserResponse
@@ -48,18 +47,10 @@ def startup():
     Base.metadata.create_all(bind=engine)
 
 
-# ---------------------------------------------------------------------------
-# Health Check
-# ---------------------------------------------------------------------------
-
 @app.get("/health")
 def health():
     return {"status": "ok"}
 
-
-# ---------------------------------------------------------------------------
-# Authentifizierung
-# ---------------------------------------------------------------------------
 
 @app.post("/auth/register", response_model=UserResponse, status_code=201)
 def register(data: UserRegister, db: Session = Depends(get_db)):
@@ -121,21 +112,15 @@ def get_profile(
     user = db.query(User).filter(User.username == current_username).first()
 
     if not user:
-        raise HTTPException(
-            status_code=404,
-            detail="User nicht gefunden"
-        )
+        raise HTTPException(status_code=404, detail="User nicht gefunden")
 
     return user
 
 
-# ---------------------------------------------------------------------------
-# Rezepte
-# ---------------------------------------------------------------------------
-
 @app.get("/recipes/search", response_model=list[RecipeResponse])
 def filter_recipes(
     q: str | None = None,
+    ingredient: str | None = None,
     tag_ids: list[int] = Query([]),
     db: Session = Depends(get_db),
     current_username: str | None = Depends(get_current_user_optional),
@@ -161,6 +146,11 @@ def filter_recipes(
                 Recipe.title.ilike(f"%{q}%"),
                 Recipe.description.ilike(f"%{q}%")
             )
+        )
+
+    if ingredient:
+        query = query.filter(
+            cast(Recipe.ingredients, String).ilike(f"%{ingredient}%")
         )
 
     if tag_ids:
@@ -283,8 +273,14 @@ def update_recipe_partial(
 
     update_data = data.model_dump(exclude_unset=True)
 
+    tag_ids = update_data.pop("tag_ids", None)
+
     for key, value in update_data.items():
         setattr(recipe, key, value)
+
+    if tag_ids is not None:
+        tags = db.query(Tag).filter(Tag.id.in_(tag_ids)).all()
+        recipe.tags = tags
 
     db.commit()
     db.refresh(recipe)
@@ -316,10 +312,6 @@ def delete_recipe(
 
     return None
 
-
-# ---------------------------------------------------------------------------
-# Ratings
-# ---------------------------------------------------------------------------
 
 @app.post("/recipes/{recipe_id}/ratings", response_model=RatingResponse)
 def rate_recipe(
@@ -361,9 +353,31 @@ def rate_recipe(
     return rating
 
 
-# ---------------------------------------------------------------------------
-# Tags
-# ---------------------------------------------------------------------------
+@app.get("/recipes/{recipe_id}/ratings")
+def get_recipe_ratings(
+    recipe_id: int,
+    db: Session = Depends(get_db),
+):
+    recipe = db.query(Recipe).filter(Recipe.id == recipe_id).first()
+
+    if not recipe:
+        raise HTTPException(status_code=404, detail="Recipe not found")
+
+    ratings = db.query(Rating).filter(Rating.recipe_id == recipe_id).all()
+
+    if not ratings:
+        return {
+            "average": 0,
+            "count": 0
+        }
+
+    average = sum(r.rating for r in ratings) / len(ratings)
+
+    return {
+        "average": round(average, 1),
+        "count": len(ratings)
+    }
+
 
 @app.post("/tags", response_model=TagResponse)
 def create_tag(data: TagCreate, db: Session = Depends(get_db)):

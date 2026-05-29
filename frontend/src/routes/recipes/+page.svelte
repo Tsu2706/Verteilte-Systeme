@@ -1,10 +1,22 @@
 <script lang="ts">
   import { browser } from "$app/environment";
-  import { getRecipes, searchRecipes, logout, type Recipe } from "$lib/api";
+  import {
+    getRecipes,
+    searchRecipes,
+    getTags,
+    logout,
+    type Recipe,
+    type Tag
+  } from "$lib/api";
 
   let recipes = $state<Recipe[]>([]);
   let filteredRecipes = $state<Recipe[]>([]);
+  let tags = $state<Tag[]>([]);
+
   let search = $state("");
+  let ingredientSearch = $state("");
+  let selectedTagIds = $state<number[]>([]);
+
   let loading = $state(true);
   let error = $state("");
   let isLoggedIn = $state(false);
@@ -16,6 +28,7 @@
     try {
       recipes = await getRecipes();
       filteredRecipes = recipes;
+      tags = await getTags();
     } catch (err) {
       error = err instanceof Error ? err.message : "Rezepte konnten nicht geladen werden.";
     } finally {
@@ -27,15 +40,36 @@
     error = "";
 
     try {
-      if (!search.trim()) {
+      const hasSearch = search.trim().length > 0;
+      const hasIngredient = ingredientSearch.trim().length > 0;
+      const hasTags = selectedTagIds.length > 0;
+
+      if (!hasSearch && !hasIngredient && !hasTags) {
         filteredRecipes = recipes;
         return;
       }
 
-      filteredRecipes = await searchRecipes(search);
+      filteredRecipes = await searchRecipes(search, ingredientSearch, selectedTagIds);
     } catch (err) {
       error = err instanceof Error ? err.message : "Suche fehlgeschlagen.";
     }
+  }
+
+  function toggleTag(tagId: number) {
+    if (selectedTagIds.includes(tagId)) {
+      selectedTagIds = selectedTagIds.filter((id) => id !== tagId);
+    } else {
+      selectedTagIds = [...selectedTagIds, tagId];
+    }
+
+    handleSearch();
+  }
+
+  function resetFilters() {
+    search = "";
+    ingredientSearch = "";
+    selectedTagIds = [];
+    filteredRecipes = recipes;
   }
 
   function handleLogout() {
@@ -56,14 +90,6 @@
       SmartC<span class="cookie-o">🍪</span><span class="cookie-o">🍪</span>kies
     </a>
 
-    <div class="search-area">
-      <input
-        bind:value={search}
-        placeholder="Rezepte suchen..."
-        oninput={handleSearch}
-      />
-    </div>
-
     <nav class="nav-actions">
       {#if isLoggedIn}
         <a href="/account" class="text-link">Mein Konto</a>
@@ -80,8 +106,52 @@
     <p class="eyebrow">Alle Rezepte</p>
     <h1>Entdecke neue Lieblingsrezepte</h1>
     <p class="subtitle">
-      Durchsuche die hochgeladenen Rezepte und finde Inspiration für dein nächstes Gericht.
+      Durchsuche öffentliche Rezepte nach Titel, Beschreibung, Zutaten oder Tags.
     </p>
+  </section>
+
+  <section class="filter-card">
+    <div class="filter-grid">
+      <div class="filter-field">
+        <label for="search">Titel oder Beschreibung</label>
+        <input
+          id="search"
+          bind:value={search}
+          placeholder="z. B. Pasta, Cookies, Salat..."
+          oninput={handleSearch}
+        />
+      </div>
+
+      <div class="filter-field">
+        <label for="ingredient">Zutat suchen</label>
+        <input
+          id="ingredient"
+          bind:value={ingredientSearch}
+          placeholder="z. B. Tomate, Mehl, Schokolade..."
+          oninput={handleSearch}
+        />
+      </div>
+    </div>
+
+    {#if tags.length > 0}
+      <div class="tag-filter">
+        <p>Nach Tags filtern</p>
+
+        <div class="tag-list">
+          {#each tags as tag}
+            <button
+              type="button"
+              class:active={selectedTagIds.includes(tag.id)}
+              onclick={() => toggleTag(tag.id)}
+            >
+              {tag.name}
+            </button>
+          {/each}
+        </div>
+      </div>
+    {/if}
+
+    <button class="reset-button" onclick={resetFilters}>Filter zurücksetzen</button>
   </section>
 
   {#if loading}
@@ -96,6 +166,7 @@
         <a href={`/recipes/${recipe.id}`} class="recipe-card">
           <div class="card-top">
             <span class="badge">{recipe.difficulty || "Rezept"}</span>
+
             {#if recipe.time}
               <span class="time">{recipe.time}</span>
             {/if}
@@ -107,6 +178,14 @@
             <p>{recipe.description}</p>
           {:else}
             <p>Keine Beschreibung vorhanden.</p>
+          {/if}
+
+          {#if recipe.tags && recipe.tags.length > 0}
+            <div class="recipe-tags">
+              {#each recipe.tags as tag}
+                <span>{tag.name}</span>
+              {/each}
+            </div>
           {/if}
 
           <div class="card-footer">
@@ -129,8 +208,8 @@
   }
 
   .topbar {
-    display: grid;
-    grid-template-columns: 1fr minmax(260px, 420px) 1fr;
+    display: flex;
+    justify-content: space-between;
     align-items: center;
     gap: 24px;
   }
@@ -146,24 +225,9 @@
     font-size: 0.72em;
     line-height: 1;
     display: inline-flex;
-    transform: translateY(-0.5px);
+    transform: translateY(-2px);
     margin-left: -3px;
     margin-right: -3px;
-  }
-
-  .search-area {
-    display: flex;
-    justify-content: center;
-  }
-
-  .search-area input {
-    width: 100%;
-    border: 1px solid #ead8c3;
-    border-radius: 999px;
-    padding: 13px 18px;
-    background: white;
-    font-size: 15px;
-    outline: none;
   }
 
   .nav-actions {
@@ -203,7 +267,7 @@
 
   .hero {
     max-width: 760px;
-    margin: 78px auto 42px;
+    margin: 70px auto 34px;
     text-align: center;
   }
 
@@ -222,6 +286,88 @@
     color: #7a5a43;
     font-size: 18px;
     line-height: 1.6;
+  }
+
+  .filter-card {
+    max-width: 980px;
+    margin: 0 auto 38px;
+    background: white;
+    border-radius: 28px;
+    padding: 26px;
+    box-shadow: 0 16px 38px rgba(80, 45, 20, 0.1);
+  }
+
+  .filter-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+  }
+
+  .filter-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .filter-field label {
+    color: #3b2416;
+    font-weight: 800;
+    font-size: 14px;
+  }
+
+  .filter-field input {
+    width: 100%;
+    border: 1px solid #ead8c3;
+    border-radius: 999px;
+    padding: 13px 18px;
+    background: #fffaf4;
+    font-size: 15px;
+    outline: none;
+    box-sizing: border-box;
+  }
+
+  .tag-filter {
+    margin-top: 22px;
+  }
+
+  .tag-filter p {
+    margin: 0 0 12px;
+    color: #3b2416;
+    font-weight: 800;
+    font-size: 14px;
+  }
+
+  .tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .tag-list button {
+    border: 1px solid #ead8c3;
+    border-radius: 999px;
+    background: #fffaf4;
+    color: #7a5a43;
+    padding: 9px 14px;
+    cursor: pointer;
+    font-weight: 700;
+  }
+
+  .tag-list button.active {
+    background: #8b4a24;
+    color: white;
+    border-color: #8b4a24;
+  }
+
+  .reset-button {
+    margin-top: 22px;
+    border: none;
+    border-radius: 999px;
+    padding: 11px 16px;
+    background: #f2ddc7;
+    color: #6f3719;
+    font-weight: 800;
+    cursor: pointer;
   }
 
   .status {
@@ -289,6 +435,23 @@
     line-height: 1.5;
   }
 
+  .recipe-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 18px;
+  }
+
+  .recipe-tags span {
+    background: #fff7ec;
+    color: #8b4a24;
+    border: 1px solid #f0dfcd;
+    border-radius: 999px;
+    padding: 7px 11px;
+    font-size: 13px;
+    font-weight: 800;
+  }
+
   .card-footer {
     margin-top: 24px;
     padding-top: 18px;
@@ -300,7 +463,7 @@
 
   @media (max-width: 850px) {
     .topbar {
-      grid-template-columns: 1fr;
+      flex-direction: column;
     }
 
     .nav-actions {
@@ -308,12 +471,12 @@
       flex-wrap: wrap;
     }
 
-    .brand-link {
-      text-align: center;
-    }
-
     h1 {
       font-size: 36px;
+    }
+
+    .filter-grid {
+      grid-template-columns: 1fr;
     }
   }
 </style>
