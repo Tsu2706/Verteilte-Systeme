@@ -1,4 +1,3 @@
-#  Neu
 # Recipe Manager – Deine kollaborative Rezept-Plattform
 
 Diese Plattform ermöglicht es Nutzern, ihre Lieblingsrezepte zentral zu speichern, zu verwalten und mit anderen Hobby-Köchen zu teilen. Oft verliert man den Überblick über gute Rezepte oder sucht ewig nach Inspiration für bestimmte Zutaten. Der Recipe Manager löst dieses Problem durch ein intelligentes Tagging-System und eine performante Suchfunktion, mit der man genau das Gericht findet, auf das man gerade Lust hat.
@@ -48,7 +47,7 @@ graph TD
   FastAPI -- "SQL (PyMySQL)" --> MySQL
 ```
 
-
+## Uhrsprüngliche Readme -- ggf. Löschen! 
 ## Uhrsprünglich Projekt-Template – SvelteKit + FastAPI + MySQL
 
 Startpunkt für euer Semester-4-Projekt. Enthält eine lauffähige Boilerplate mit:
