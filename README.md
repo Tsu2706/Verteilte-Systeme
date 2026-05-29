@@ -21,7 +21,7 @@ Die Anwendung folgt einer modernen Microservice-Architektur und wird vollständi
 * **Datenbank:** MySQL 8.4
 * **Deployment:** Docker & Docker Compose
 
-### Architekturdiagramm
+### Architekturdiagramm:
 
 ```mermaid
 graph TD
