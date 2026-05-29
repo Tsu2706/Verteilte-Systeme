@@ -212,6 +212,24 @@ def get_recipes(
     # nur public
     return query.filter(Recipe.is_public == True).all()
 
+@app.get("/recipes/{recipe_id}", response_model=RecipeResponse)
+def get_recipe(
+    recipe_id: int,
+    db: Session = Depends(get_db),
+    current_username: str = Depends(get_current_user)
+):
+    recipe = db.query(Recipe).filter(Recipe.id == recipe_id).first()
+
+    if not recipe:
+        raise HTTPException(status_code=404, detail="Recipe not found")
+
+    user = db.query(User).filter(User.username == current_username).first()
+
+    # Zugriff erlauben: public ODER eigenes Rezept
+    if not recipe.is_public and recipe.user_id != user.id:
+        raise HTTPException(status_code=403, detail="Not allowed")
+
+    return recipe
 
 @app.post("/recipes", response_model=RecipeResponse)
 def create_recipe(
