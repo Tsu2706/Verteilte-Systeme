@@ -1,124 +1,117 @@
 <script lang="ts">
-  import { onMount } from "svelte";
-  import { getRecipes, type Recipe } from "$lib/api";
+  import { browser } from "$app/environment";
+  import { getRecipes, searchRecipes, logout, type Recipe } from "$lib/api";
 
   let recipes = $state<Recipe[]>([]);
+  let filteredRecipes = $state<Recipe[]>([]);
+  let search = $state("");
   let loading = $state(true);
   let error = $state("");
-  let searchTerm = $state("");
+  let isLoggedIn = $state(false);
 
-  const filteredRecipes = $derived(
-    recipes.filter((recipe) => {
-      const search = searchTerm.toLowerCase().trim();
+  async function loadRecipes() {
+    loading = true;
+    error = "";
 
-      return (
-        recipe.title.toLowerCase().includes(search) ||
-        recipe.description?.toLowerCase().includes(search) ||
-        recipe.time?.toLowerCase().includes(search) ||
-        recipe.difficulty?.toLowerCase().includes(search)
-      );
-    })
-  );
-
-  onMount(async () => {
     try {
       recipes = await getRecipes();
+      filteredRecipes = recipes;
     } catch (err) {
-      error = "Rezepte konnten nicht geladen werden.";
-      console.error(err);
+      error = err instanceof Error ? err.message : "Rezepte konnten nicht geladen werden.";
     } finally {
       loading = false;
+    }
+  }
+
+  async function handleSearch() {
+    error = "";
+
+    try {
+      if (!search.trim()) {
+        filteredRecipes = recipes;
+        return;
+      }
+
+      filteredRecipes = await searchRecipes(search);
+    } catch (err) {
+      error = err instanceof Error ? err.message : "Suche fehlgeschlagen.";
+    }
+  }
+
+  function handleLogout() {
+    logout();
+  }
+
+  $effect(() => {
+    if (browser) {
+      isLoggedIn = !!localStorage.getItem("token");
+      loadRecipes();
     }
   });
 </script>
 
 <main class="recipes-page">
-  <a href="/" class="brand-link">
-    SmartC<span class="cookie-o">🍪</span><span class="cookie-o">🍪</span>kies
-  </a>
-
   <header class="topbar">
-    <div class="search-container">
-      <span class="search-icon">⌕</span>
+    <a href="/" class="brand-link">
+      SmartC<span>🍪</span><span>🍪</span>kies
+    </a>
 
+    <div class="search-area">
       <input
-        type="text"
-        bind:value={searchTerm}
-        placeholder="Rezepte durchsuchen..."
+        bind:value={search}
+        placeholder="Rezepte suchen..."
+        oninput={handleSearch}
       />
     </div>
 
-    <div class="topbar-actions">
-      <a href="/recipes/new" class="new-button">
-        <span class="plus-circle">+</span>
-        Neues Rezept
-      </a>
-
-      <a href="/account" class="account-link">
-        Mein Konto
-      </a>
-    </div>
+    <nav class="nav-actions">
+      {#if isLoggedIn}
+        <a href="/account" class="text-link">Mein Konto</a>
+        <a href="/recipes/new" class="add-button">+</a>
+        <button class="logout-button" onclick={handleLogout}>Logout</button>
+      {:else}
+        <a href="/login" class="text-link">Login</a>
+        <a href="/register" class="text-link">Registrieren</a>
+      {/if}
+    </nav>
   </header>
 
-  <section class="hero-card">
-    <div>
-      <p class="eyebrow">SmartCookies Rezeptwelt</p>
-
-      <h1>
-        Hochgeladene Rezepte
-        <span class="headline-cookie">🍪</span>
-      </h1>
-
-      <p class="subtitle">
-        Entdecke neue Lieblingsrezepte, speichere eigene Kreationen
-        und verwalte alles an einem Ort.
-      </p>
-    </div>
+  <section class="hero">
+    <p class="eyebrow">Alle Rezepte</p>
+    <h1>Entdecke neue Lieblingsrezepte</h1>
+    <p class="subtitle">
+      Durchsuche die hochgeladenen Rezepte und finde Inspiration für dein nächstes Gericht.
+    </p>
   </section>
 
   {#if loading}
-    <section class="status-card">
-      <p>Rezepte werden geladen...</p>
-    </section>
+    <p class="status">Rezepte werden geladen...</p>
   {:else if error}
-    <section class="status-card">
-      <p>{error}</p>
-    </section>
+    <p class="status error">{error}</p>
   {:else if filteredRecipes.length === 0}
-    <section class="status-card">
-      <div class="empty-icon">🍪</div>
-      <h2>Keine Rezepte gefunden</h2>
-      <p>Versuche einen anderen Suchbegriff.</p>
-    </section>
+    <p class="status">Keine Rezepte gefunden.</p>
   {:else}
-    <section class="recipes-grid">
+    <section class="recipe-grid">
       {#each filteredRecipes as recipe}
         <a href={`/recipes/${recipe.id}`} class="recipe-card">
-          <div class="recipe-top">
-            <div class="recipe-icon">🍪</div>
-
-            {#if recipe.difficulty}
-              <span class="difficulty">
-                {recipe.difficulty}
-              </span>
+          <div class="card-top">
+            <span class="badge">{recipe.difficulty || "Rezept"}</span>
+            {#if recipe.time}
+              <span class="time">{recipe.time}</span>
             {/if}
           </div>
 
-          <div class="recipe-content">
-            <h2>{recipe.title}</h2>
+          <h2>{recipe.title}</h2>
 
-            <p>
-              {recipe.description ||
-                "Öffne das Rezept für Zutaten und Zubereitung."}
-            </p>
+          {#if recipe.description}
+            <p>{recipe.description}</p>
+          {:else}
+            <p>Keine Beschreibung vorhanden.</p>
+          {/if}
 
-            <div class="recipe-meta">
-              {#if recipe.time}
-                <span>⏱ {recipe.time}</span>
-              {/if}
-
-              <span>→ Rezept öffnen</span>
-            </div>
+          <div class="card-footer">
+            <span>{recipe.ingredients?.length || 0} Zutaten</span>
+            <span>{recipe.steps?.length || 0} Schritte</span>
           </div>
         </a>
       {/each}
@@ -127,319 +120,191 @@
 </main>
 
 <style>
-  :global(body) {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background:
-      radial-gradient(circle at top left, #ffe1b8 0, transparent 34%),
-      linear-gradient(135deg, #fff7ec 0%, #f6d7aa 100%);
-    color: #3d2415;
-  }
-
   .recipes-page {
     min-height: 100vh;
-    padding: 26px;
-    box-sizing: border-box;
-  }
-
-  .brand-link {
-    position: absolute;
-    top: 30px;
-    left: 34px;
-    text-decoration: none;
-    font-size: 2rem;
-    font-weight: 900;
-    color: #8b552b;
-    letter-spacing: -1px;
-  }
-
-  .cookie-o {
-    display: inline-block;
-    margin: 0 -3px;
-    font-size: 1.65rem;
-    vertical-align: 2px;
+    background: #fff7ec;
+    padding: 28px;
+    font-family: Arial, sans-serif;
+    color: #3b2416;
   }
 
   .topbar {
-    max-width: 1280px;
-    margin: 0 auto 30px;
+    display: grid;
+    grid-template-columns: 1fr minmax(260px, 420px) 1fr;
+    align-items: center;
+    gap: 24px;
+  }
+
+  .brand-link {
+    text-decoration: none;
+    color: #3b2416;
+    font-size: 26px;
+    font-weight: 800;
+  }
+
+  .search-area {
+    display: flex;
+    justify-content: center;
+  }
+
+  .search-area input {
+    width: 100%;
+    border: 1px solid #ead8c3;
+    border-radius: 999px;
+    padding: 13px 18px;
+    background: white;
+    font-size: 15px;
+    outline: none;
+  }
+
+  .nav-actions {
     display: flex;
     justify-content: flex-end;
     align-items: center;
-    gap: 18px;
-    padding-top: 6px;
-  }
-
-  .search-container {
-    width: 380px;
-    height: 56px;
-    border-radius: 999px;
-    background: rgba(255, 250, 244, 0.92);
-    box-shadow: 0 10px 30px rgba(77, 43, 18, 0.08);
-    display: flex;
-    align-items: center;
-    padding: 0 22px;
     gap: 14px;
-    backdrop-filter: blur(12px);
   }
 
-  .search-icon {
-    font-size: 1.1rem;
-    color: #9a7357;
-  }
-
-  .search-container input {
-    width: 100%;
-    border: none;
-    outline: none;
-    background: transparent;
-    font-size: 1rem;
-    color: #4a2b18;
-  }
-
-  .search-container input::placeholder {
-    color: #9c7a63;
-  }
-
-  .topbar-actions {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-  }
-
-  .new-button {
-    height: 56px;
-    padding: 0 24px;
-    border-radius: 999px;
-    background: linear-gradient(135deg, #b86a1f, #9a5518);
-    color: white;
+  .text-link {
     text-decoration: none;
-    font-weight: 800;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    box-shadow: 0 14px 30px rgba(155, 85, 29, 0.22);
-  }
-
-  .plus-circle {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    background: white;
-    color: #9a5518;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.15rem;
-    font-weight: 900;
-  }
-
-  .account-link {
-    text-decoration: none;
-    color: #8b552b;
-    font-size: 1rem;
+    color: #3b2416;
+    font-size: 15px;
     font-weight: 400;
   }
 
-  .hero-card {
-    max-width: 1280px;
-    margin: 0 auto 30px;
-    padding: 54px;
-    border-radius: 38px;
-    background: rgba(255, 250, 244, 0.82);
-    backdrop-filter: blur(14px);
-    box-shadow: 0 20px 60px rgba(77, 43, 18, 0.1);
+  .add-button {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: #8b4a24;
+    color: white;
+    text-decoration: none;
+    font-size: 28px;
+    line-height: 39px;
+    text-align: center;
+    font-weight: 400;
+  }
+
+  .logout-button {
+    border: none;
+    background: transparent;
+    color: #7a5a43;
+    cursor: pointer;
+    font-size: 15px;
+  }
+
+  .hero {
+    max-width: 760px;
+    margin: 78px auto 42px;
+    text-align: center;
   }
 
   .eyebrow {
-    margin: 0 0 14px;
-    color: #a56a3d;
+    color: #8b4a24;
     font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    font-size: 0.82rem;
+    margin-bottom: 10px;
   }
 
   h1 {
+    font-size: 48px;
     margin: 0;
-    font-size: clamp(3rem, 7vw, 5.4rem);
-    line-height: 0.95;
-    letter-spacing: -3px;
-    color: #4a2b18;
-  }
-
-  .headline-cookie {
-    font-size: 0.72em;
   }
 
   .subtitle {
-    margin: 24px 0 0;
-    max-width: 760px;
-    color: #6f5646;
-    font-size: 1.2rem;
+    color: #7a5a43;
+    font-size: 18px;
     line-height: 1.6;
   }
 
-  .recipes-grid {
-    max-width: 1280px;
+  .status {
+    text-align: center;
+    margin-top: 40px;
+    color: #7a5a43;
+  }
+
+  .status.error {
+    color: #9b1c1c;
+  }
+
+  .recipe-grid {
+    max-width: 1120px;
     margin: 0 auto;
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
     gap: 24px;
   }
 
   .recipe-card {
+    background: white;
+    border-radius: 28px;
+    padding: 26px;
     text-decoration: none;
     color: inherit;
-    border-radius: 32px;
-    padding: 28px;
-    background: rgba(255, 250, 244, 0.88);
-    backdrop-filter: blur(12px);
-    box-shadow: 0 20px 40px rgba(77, 43, 18, 0.08);
-    transition:
-      transform 0.2s ease,
-      box-shadow 0.2s ease;
+    box-shadow: 0 16px 38px rgba(80, 45, 20, 0.12);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
   }
 
   .recipe-card:hover {
-    transform: translateY(-6px);
-    box-shadow: 0 28px 50px rgba(77, 43, 18, 0.14);
+    transform: translateY(-4px);
+    box-shadow: 0 22px 46px rgba(80, 45, 20, 0.16);
   }
 
-  .recipe-top {
+  .card-top,
+  .card-footer {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 22px;
-  }
-
-  .recipe-icon {
-    width: 64px;
-    height: 64px;
-    border-radius: 22px;
-    background: #fff0dd;
-    display: flex;
+    gap: 12px;
     align-items: center;
-    justify-content: center;
-    font-size: 2rem;
   }
 
-  .difficulty {
-    padding: 8px 12px;
+  .badge {
+    background: #f2ddc7;
+    color: #6f3719;
+    padding: 7px 12px;
     border-radius: 999px;
-    background: #f6e1ca;
-    color: #8a5a2f;
-    font-size: 0.82rem;
+    font-size: 13px;
     font-weight: 800;
   }
 
-  .recipe-content h2 {
-    margin: 0 0 14px;
-    font-size: 1.7rem;
-    color: #4a2b18;
+  .time {
+    color: #7a5a43;
+    font-size: 14px;
   }
 
-  .recipe-content p {
-    margin: 0;
-    color: #6f5646;
-    line-height: 1.6;
+  .recipe-card h2 {
+    margin: 22px 0 10px;
+    font-size: 24px;
   }
 
-  .recipe-meta {
+  .recipe-card p {
+    color: #7a5a43;
+    line-height: 1.5;
+  }
+
+  .card-footer {
     margin-top: 24px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    color: #9a5518;
-    font-weight: 700;
-    font-size: 0.92rem;
+    padding-top: 18px;
+    border-top: 1px solid #f0dfcd;
+    color: #8b4a24;
+    font-weight: 800;
+    font-size: 14px;
   }
 
-  .status-card {
-    max-width: 700px;
-    margin: 80px auto 0;
-    padding: 34px;
-    border-radius: 28px;
-    text-align: center;
-    background: rgba(255, 250, 244, 0.88);
-    box-shadow: 0 20px 40px rgba(77, 43, 18, 0.08);
-  }
-
-  .status-card h2 {
-    margin: 0 0 10px;
-  }
-
-  .status-card p {
-    margin: 0;
-    color: #6f5646;
-  }
-
-  .empty-icon {
-    font-size: 3rem;
-    margin-bottom: 14px;
-  }
-
-  @media (max-width: 980px) {
+  @media (max-width: 850px) {
     .topbar {
-      flex-direction: column;
-      align-items: stretch;
-      padding-top: 70px;
+      grid-template-columns: 1fr;
     }
 
-    .search-container {
-      width: 100%;
-      box-sizing: border-box;
-    }
-
-    .topbar-actions {
-      width: 100%;
-      justify-content: space-between;
-    }
-
-    .hero-card {
-      padding: 34px;
-      border-radius: 28px;
-    }
-
-    h1 {
-      letter-spacing: -2px;
-    }
-  }
-
-  @media (max-width: 640px) {
-    .recipes-page {
-      padding: 18px;
+    .nav-actions {
+      justify-content: center;
+      flex-wrap: wrap;
     }
 
     .brand-link {
-      position: static;
-      display: inline-block;
-      margin-bottom: 18px;
-    }
-
-    .topbar {
-      padding-top: 0;
-    }
-
-    .topbar-actions {
-      flex-direction: column;
-      align-items: stretch;
-    }
-
-    .new-button {
-      justify-content: center;
-    }
-
-    .account-link {
       text-align: center;
     }
 
-    .hero-card {
-      padding: 28px;
-    }
-
-    .recipes-grid {
-      grid-template-columns: 1fr;
+    h1 {
+      font-size: 36px;
     }
   }
 </style>

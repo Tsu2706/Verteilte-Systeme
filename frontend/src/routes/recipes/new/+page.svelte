@@ -1,320 +1,265 @@
 <script lang="ts">
+  import { browser } from "$app/environment";
   import { createRecipe } from "$lib/api";
 
   let title = $state("");
   let description = $state("");
-  let ingredients = $state("");
-  let steps = $state("");
   let time = $state("");
   let difficulty = $state("");
+  let ingredientsText = $state("");
+  let stepsText = $state("");
   let isPublic = $state(true);
-
-  let saving = $state(false);
   let error = $state("");
+  let success = $state("");
 
-  async function saveRecipe(event: SubmitEvent) {
-    event.preventDefault();
+  $effect(() => {
+    if (browser && !localStorage.getItem("token")) {
+      window.location.href = "/login";
+    }
+  });
 
+  function linesToArray(value: string) {
+    return value
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean);
+  }
+
+  async function handleSubmit() {
     error = "";
-    saving = true;
+    success = "";
 
     try {
-      await createRecipe({
+      const recipe = await createRecipe({
         title,
         description,
-        ingredients: ingredients
-          .split("\n")
-          .map((item) => item.trim())
-          .filter(Boolean),
-        steps: steps
-          .split("\n")
-          .map((item) => item.trim())
-          .filter(Boolean),
         time,
         difficulty,
-        is_public: isPublic
+        ingredients: linesToArray(ingredientsText),
+        steps: linesToArray(stepsText),
+        is_public: isPublic,
+        tag_ids: []
       });
 
-      window.location.href = "/recipes";
+      success = "Rezept wurde erfolgreich gespeichert.";
+      window.location.href = `/recipes/${recipe.id}`;
     } catch (err) {
-      error = "Rezept konnte nicht gespeichert werden.";
-      console.error(err);
-    } finally {
-      saving = false;
+      error = err instanceof Error ? err.message : "Rezept konnte nicht gespeichert werden.";
     }
   }
 </script>
 
 <main class="new-page">
-  <a href="/" class="brand-link" aria-label="Zur Startseite">
-    SmartC<span class="cookie-o">🍪</span><span class="cookie-o">🍪</span>kies
+  <a href="/" class="brand-link">
+    SmartC<span>🍪</span><span>🍪</span>kies
   </a>
 
   <section class="form-card">
-    <a href="/recipes" class="back-link">
-      ← Zurück zu den Rezepten
-    </a>
+    <a href="/recipes" class="back-link">← Zurück zu den Rezepten</a>
 
     <h1>Neues Rezept</h1>
+    <p>Erstelle ein neues Rezept für SmartCookies.</p>
 
-    <p class="subtitle">
-      Erstelle ein neues Lieblingsrezept für SmartCookies.
-    </p>
+    {#if error}
+      <div class="error">{error}</div>
+    {/if}
 
-    <form onsubmit={saveRecipe}>
-      <div class="field">
-        <label for="title">Rezeptname</label>
-        <input
-          id="title"
-          bind:value={title}
-          type="text"
-          placeholder="z. B. Pasta Carbonara"
-          required
-        />
-      </div>
+    {#if success}
+      <div class="success">{success}</div>
+    {/if}
 
-      <div class="field">
-        <label for="description">Beschreibung</label>
-        <textarea
-          id="description"
-          bind:value={description}
-          placeholder="Kurze Beschreibung des Rezepts"
-        ></textarea>
-      </div>
+    <form
+      onsubmit={(e) => {
+        e.preventDefault();
+        handleSubmit();
+      }}
+    >
+      <label for="title">Rezeptname</label>
+      <input id="title" bind:value={title} placeholder="z. B. Schoko-Cookies" required />
 
-      <div class="double-grid">
-        <div class="field">
+      <label for="description">Beschreibung</label>
+      <textarea
+        id="description"
+        bind:value={description}
+        placeholder="Kurze Beschreibung des Rezepts"
+      ></textarea>
+
+      <div class="row">
+        <div>
           <label for="time">Zubereitungszeit</label>
-          <input
-            id="time"
-            bind:value={time}
-            type="text"
-            placeholder="z. B. 30 Minuten"
-          />
+          <input id="time" bind:value={time} placeholder="z. B. 30 Minuten" />
         </div>
 
-        <div class="field">
+        <div>
           <label for="difficulty">Schwierigkeit</label>
-          <select id="difficulty" bind:value={difficulty}>
-            <option value="">Auswählen</option>
-            <option value="Einfach">Einfach</option>
-            <option value="Mittel">Mittel</option>
-            <option value="Schwer">Schwer</option>
-          </select>
+          <input id="difficulty" bind:value={difficulty} placeholder="z. B. Einfach" />
         </div>
       </div>
 
-      <div class="field">
-        <label for="ingredients">Zutaten</label>
-        <textarea
-          id="ingredients"
-          bind:value={ingredients}
-          placeholder="Jede Zutat in eine neue Zeile schreiben"
-          required
-        ></textarea>
-      </div>
+      <label for="ingredients">Zutaten</label>
+      <textarea
+        id="ingredients"
+        bind:value={ingredientsText}
+        placeholder="Jede Zutat in eine neue Zeile schreiben"
+        required
+      ></textarea>
 
-      <div class="field">
-        <label for="steps">Zubereitung</label>
-        <textarea
-          id="steps"
-          bind:value={steps}
-          placeholder="Jeden Schritt in eine neue Zeile schreiben"
-          required
-        ></textarea>
-      </div>
+      <label for="steps">Zubereitungsschritte</label>
+      <textarea
+        id="steps"
+        bind:value={stepsText}
+        placeholder="Jeden Schritt in eine neue Zeile schreiben"
+        required
+      ></textarea>
 
-      <label class="checkbox-row">
+      <label class="checkbox">
         <input type="checkbox" bind:checked={isPublic} />
-        Öffentlich sichtbar
+        Rezept öffentlich anzeigen
       </label>
 
-      {#if error}
-        <div class="error-box">
-          {error}
-        </div>
-      {/if}
-
-      <button type="submit" disabled={saving}>
-        {#if saving}
-          Rezept wird gespeichert...
-        {:else}
-          Rezept speichern 🍪
-        {/if}
-      </button>
+      <button type="submit">Rezept speichern</button>
     </form>
   </section>
 </main>
 
 <style>
-  :global(body) {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background: linear-gradient(135deg, #fff7ed, #f3dfc8);
-    color: #3b2415;
-    overflow: auto;
-  }
-
   .new-page {
     min-height: 100vh;
-    padding: 90px 24px 40px;
-    box-sizing: border-box;
+    background: #fff7ec;
+    padding: 100px 28px 40px;
+    font-family: Arial, sans-serif;
+    color: #3b2416;
   }
 
   .brand-link {
-    position: absolute;
-    top: 20px;
-    left: 28px;
-    color: #8b552b;
-    font-size: 24px;
-    font-weight: 800;
+    position: fixed;
+    top: 28px;
+    left: 36px;
+    z-index: 10;
     text-decoration: none;
-    display: flex;
-    align-items: center;
-  }
-
-  .cookie-o {
-    font-size: 0.72em;
-    line-height: 1;
-    display: inline-flex;
-    transform: translateY(1px);
-    margin-left: -3px;
-    margin-right: -3px;
+    color: #3b2416;
+    font-size: 26px;
+    font-weight: 800;
   }
 
   .form-card {
-    max-width: 900px;
+    max-width: 760px;
     margin: 0 auto;
-    background: #fffaf4;
-    border-radius: 30px;
-    padding: 42px;
-    box-shadow: 0 12px 30px rgba(92, 55, 25, 0.12);
+    background: white;
+    border-radius: 28px;
+    padding: 38px;
+    box-shadow: 0 18px 45px rgba(80, 45, 20, 0.14);
   }
 
   .back-link {
-    display: inline-block;
-    margin-bottom: 28px;
-    color: #9b551d;
     text-decoration: none;
+    color: #8b4a24;
     font-weight: 800;
   }
 
   h1 {
-    margin: 0;
-    font-size: 52px;
-    color: #4a2c1a;
+    margin: 26px 0 8px;
+    font-size: 42px;
   }
 
-  .subtitle {
-    margin: 18px 0 34px;
-    color: #6d5140;
-    font-size: 18px;
-    line-height: 1.5;
+  p {
+    color: #7a5a43;
   }
 
   form {
     display: flex;
     flex-direction: column;
-    gap: 24px;
+    gap: 13px;
+    margin-top: 28px;
   }
 
-  .field {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .field label {
+  label {
     font-weight: 800;
-    color: #4a2c1a;
   }
 
   input,
-  textarea,
-  select {
-    border: none;
+  textarea {
+    border: 1px solid #ead8c3;
+    border-radius: 16px;
+    padding: 14px;
+    font-size: 15px;
     outline: none;
-    background: #fff0dd;
-    border-radius: 18px;
-    padding: 16px 18px;
-    font-size: 16px;
-    color: #4a2c1a;
-    box-sizing: border-box;
+    background: #fffaf4;
+    font-family: inherit;
   }
 
   textarea {
-    min-height: 140px;
+    min-height: 110px;
     resize: vertical;
   }
 
-  .double-grid {
+  .row {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 18px;
   }
 
-  .checkbox-row {
+  .row div {
     display: flex;
-    align-items: center;
-    gap: 12px;
-    font-weight: 700;
-    color: #6d5140;
+    flex-direction: column;
+    gap: 13px;
   }
 
-  .checkbox-row input {
+  .checkbox {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #7a5a43;
+  }
+
+  .checkbox input {
     width: 18px;
     height: 18px;
   }
 
   button {
-    height: 56px;
+    margin-top: 16px;
     border: none;
     border-radius: 999px;
-    background: #9b551d;
+    padding: 15px;
+    background: #8b4a24;
     color: white;
-    font-size: 18px;
     font-weight: 800;
     cursor: pointer;
-    transition: transform 0.2s ease;
   }
 
   button:hover {
-    transform: translateY(-2px);
+    background: #6f3719;
   }
 
-  button:disabled {
-    opacity: 0.7;
-    cursor: not-allowed;
+  .error,
+  .success {
+    margin-top: 18px;
+    padding: 12px;
+    border-radius: 14px;
   }
 
-  .error-box {
-    background: #ffe4e1;
-    color: #b42318;
-    padding: 16px 18px;
-    border-radius: 18px;
-    font-weight: 700;
+  .error {
+    background: #ffe6e6;
+    color: #9b1c1c;
   }
 
-  @media (max-width: 750px) {
-    .brand-link {
-      position: static;
-      margin-bottom: 20px;
-    }
+  .success {
+    background: #e7f8ec;
+    color: #19743a;
+  }
 
-    .new-page {
-      padding-top: 24px;
+  @media (max-width: 700px) {
+    .row {
+      grid-template-columns: 1fr;
     }
 
     .form-card {
       padding: 28px;
     }
 
-    .double-grid {
-      grid-template-columns: 1fr;
-    }
-
     h1 {
-      font-size: 40px;
+      font-size: 34px;
     }
   }
 </style>

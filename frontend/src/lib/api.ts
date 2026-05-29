@@ -1,25 +1,34 @@
+import { browser } from "$app/environment";
+
 const API_BASE_URL = "http://localhost:8000";
+
+export type Tag = {
+  id: number;
+  name: string;
+};
 
 export type Recipe = {
   id: number;
+  user_id: number;
   title: string;
-  description?: string;
-  ingredients?: string;
-  instructions?: string;
-  time?: string;
-  difficulty?: string;
-  image_url?: string;
-  user_id?: number;
+  description?: string | null;
+  ingredients: string[];
+  steps: string[];
+  is_public: boolean;
+  tags?: Tag[];
+  time?: string | null;
+  difficulty?: string | null;
 };
 
 export type RecipeInput = {
   title: string;
-  description?: string;
-  ingredients?: string;
-  instructions?: string;
-  time?: string;
-  difficulty?: string;
-  image_url?: string;
+  description?: string | null;
+  ingredients: string[];
+  steps: string[];
+  is_public?: boolean;
+  tag_ids?: number[];
+  time?: string | null;
+  difficulty?: string | null;
 };
 
 export type User = {
@@ -29,6 +38,7 @@ export type User = {
 };
 
 function getToken() {
+  if (!browser) return null;
   return localStorage.getItem("token");
 }
 
@@ -43,24 +53,43 @@ function authHeaders() {
 
 async function handleResponse(response: Response) {
   if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(errorText || "Ein Fehler ist aufgetreten.");
+    let message = "Ein Fehler ist aufgetreten.";
+
+    try {
+      const data = await response.json();
+      message = data.detail || message;
+    } catch {
+      message = (await response.text()) || message;
+    }
+
+    throw new Error(message);
   }
 
-  if (response.status === 204) {
-    return null;
-  }
-
+  if (response.status === 204) return null;
   return response.json();
 }
 
 export async function getRecipes(): Promise<Recipe[]> {
-  const response = await fetch(`${API_BASE_URL}/recipes`);
+  const response = await fetch(`${API_BASE_URL}/recipes`, {
+    headers: authHeaders()
+  });
+  return handleResponse(response);
+}
+
+export async function searchRecipes(q: string): Promise<Recipe[]> {
+  const params = new URLSearchParams();
+  if (q.trim()) params.set("q", q.trim());
+
+  const response = await fetch(`${API_BASE_URL}/recipes/search?${params.toString()}`, {
+    headers: authHeaders()
+  });
   return handleResponse(response);
 }
 
 export async function getRecipe(id: number): Promise<Recipe> {
-  const response = await fetch(`${API_BASE_URL}/recipes/${id}`);
+  const response = await fetch(`${API_BASE_URL}/recipes/${id}`, {
+    headers: authHeaders()
+  });
   return handleResponse(response);
 }
 
@@ -68,15 +97,15 @@ export async function createRecipe(data: RecipeInput): Promise<Recipe> {
   const response = await fetch(`${API_BASE_URL}/recipes`, {
     method: "POST",
     headers: authHeaders(),
-    body: JSON.stringify(data)
+    body: JSON.stringify({ ...data, tag_ids: data.tag_ids ?? [] })
   });
 
   return handleResponse(response);
 }
 
-export async function updateRecipe(id: number, data: RecipeInput): Promise<Recipe> {
+export async function updateRecipe(id: number, data: Partial<RecipeInput>): Promise<Recipe> {
   const response = await fetch(`${API_BASE_URL}/recipes/${id}`, {
-    method: "PUT",
+    method: "PATCH",
     headers: authHeaders(),
     body: JSON.stringify(data)
   });
@@ -94,7 +123,7 @@ export async function deleteRecipe(id: number): Promise<void> {
 }
 
 export async function getMe(): Promise<User> {
-  const response = await fetch(`${API_BASE_URL}/users/me`, {
+  const response = await fetch(`${API_BASE_URL}/my-profile`, {
     headers: authHeaders()
   });
 
@@ -110,6 +139,37 @@ export async function getMyRecipes(): Promise<Recipe[]> {
 }
 
 export function logout() {
-  localStorage.removeItem("token");
+  if (browser) localStorage.removeItem("token");
   window.location.href = "/login";
+}
+
+export async function login(username: string, password: string) {
+  const formData = new URLSearchParams();
+  formData.append("username", username);
+  formData.append("password", password);
+
+  const response = await fetch(`${API_BASE_URL}/token`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded"
+    },
+    body: formData
+  });
+
+  const data = await handleResponse(response);
+  if (browser) localStorage.setItem("token", data.access_token);
+
+  return data;
+}
+
+export async function register(username: string, email: string, password: string): Promise<User> {
+  const response = await fetch(`${API_BASE_URL}/auth/register`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ username, email, password })
+  });
+
+  return handleResponse(response);
 }

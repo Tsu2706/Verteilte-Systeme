@@ -1,108 +1,82 @@
 <script lang="ts">
-  import { onMount } from "svelte";
-  import { goto } from "$app/navigation";
-  import { getMe, getMyRecipes, logout } from "$lib/api";
+  import { browser } from "$app/environment";
+  import { getMe, getMyRecipes, logout, type Recipe, type User } from "$lib/api";
 
-  let user = $state<any>(null);
-  let recipes = $state<any[]>([]);
+  let user = $state<User | null>(null);
+  let recipes = $state<Recipe[]>([]);
   let loading = $state(true);
   let error = $state("");
 
-  onMount(async () => {
-    const token = localStorage.getItem("token");
-
-    if (!token) {
-      goto("/login");
-      return;
-    }
+  async function loadAccount() {
+    loading = true;
+    error = "";
 
     try {
       user = await getMe();
       recipes = await getMyRecipes();
     } catch (err) {
-      error = "Dein Konto konnte nicht geladen werden.";
+      error = err instanceof Error ? err.message : "Konto konnte nicht geladen werden.";
     } finally {
       loading = false;
     }
-  });
+  }
 
   function handleLogout() {
     logout();
   }
+
+  $effect(() => {
+    if (browser) {
+      if (!localStorage.getItem("token")) {
+        window.location.href = "/login";
+        return;
+      }
+
+      loadAccount();
+    }
+  });
 </script>
 
 <main class="account-page">
-  <a href="/" class="brand-link" aria-label="Zur Startseite">
-    SmartC<span class="cookie-o">🍪</span><span class="cookie-o">🍪</span>kies
+  <a href="/" class="brand-link">
+    SmartC<span>🍪</span><span>🍪</span>kies
   </a>
 
   <section class="account-card">
-    <div class="top-bar">
-      <div>
-        <p class="eyebrow">Mein Konto</p>
-        <h1>Dein SmartCookies Profil</h1>
-      </div>
-
-      <button class="logout-button" onclick={handleLogout}>
-        Ausloggen
-      </button>
+    <div class="top-row">
+      <a href="/recipes" class="back-link">← Zurück zu den Rezepten</a>
+      <button onclick={handleLogout}>Logout</button>
     </div>
 
     {#if loading}
-      <div class="state-box">Konto wird geladen...</div>
-    {:else}
-      {#if error}
-        <div class="error-box">{error}</div>
-      {/if}
+      <p class="status">Konto wird geladen...</p>
+    {:else if error}
+      <p class="status error">{error}</p>
+    {:else if user}
+      <h1>Mein Konto</h1>
 
-      {#if user}
-        <div class="user-card">
-          <div class="avatar">
-            {user.username?.charAt(0).toUpperCase()}
-          </div>
+      <div class="user-box">
+        <p><strong>Benutzername:</strong> {user.username}</p>
+        <p><strong>E-Mail:</strong> {user.email}</p>
+      </div>
 
-          <div>
-            <h2>{user.username}</h2>
-            <p>{user.email}</p>
-          </div>
-        </div>
-      {/if}
-
-      <div class="recipes-header">
+      <div class="headline-row">
         <h2>Meine Rezepte</h2>
-
-        <a href="/recipes/new" class="new-button">
-          + Neues Rezept
-        </a>
+        <a href="/recipes/new" class="new-button">Neues Rezept</a>
       </div>
 
       {#if recipes.length === 0}
-        <div class="empty-box">
-          Du hast noch keine Rezepte erstellt.
-        </div>
+        <p class="status">Du hast noch keine Rezepte erstellt.</p>
       {:else}
-        <div class="recipes-grid">
+        <div class="recipe-list">
           {#each recipes as recipe}
-            <a class="recipe-card" href={`/recipes/${recipe.id}`}>
-              <div class="recipe-content">
-                <div class="recipe-top">
-                  <h3>{recipe.title}</h3>
-
-                  {#if recipe.difficulty}
-                    <span class="badge">{recipe.difficulty}</span>
-                  {/if}
-                </div>
-
+            <a href={`/recipes/${recipe.id}`} class="recipe-item">
+              <div>
+                <h3>{recipe.title}</h3>
                 <p>{recipe.description || "Keine Beschreibung vorhanden."}</p>
-
-                <div class="recipe-meta">
-                  {#if recipe.time}
-                    <span>⏱ {recipe.time}</span>
-                  {/if}
-
-                  <span>→ Rezept öffnen</span>
-                </div>
               </div>
+
+              <span>{recipe.is_public ? "Öffentlich" : "Privat"}</span>
             </a>
           {/each}
         </div>
@@ -112,247 +86,144 @@
 </main>
 
 <style>
-  :global(body) {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background:
-      radial-gradient(circle at top left, #ffe1b8 0, transparent 34%),
-      linear-gradient(135deg, #fff7ec 0%, #f6d7aa 100%);
-    color: #3d2415;
-  }
-
   .account-page {
     min-height: 100vh;
-    padding: 110px 24px 40px;
-    box-sizing: border-box;
+    background: #fff7ec;
+    padding: 100px 28px 40px;
+    font-family: Arial, sans-serif;
+    color: #3b2416;
   }
 
   .brand-link {
     position: fixed;
     top: 28px;
-    left: 34px;
-    z-index: 20;
+    left: 36px;
     text-decoration: none;
-    font-size: 2rem;
-    font-weight: 900;
-    color: #3d2415;
-    letter-spacing: -1px;
-  }
-
-  .cookie-o {
-    display: inline-block;
-    margin: 0 -2px;
-    font-size: 1.65rem;
-    vertical-align: 2px;
+    color: #3b2416;
+    font-size: 26px;
+    font-weight: 800;
   }
 
   .account-card {
-    width: min(1100px, 100%);
+    max-width: 860px;
     margin: 0 auto;
-    padding: 34px;
-    border-radius: 32px;
-    background: rgba(255, 255, 255, 0.78);
-    box-shadow: 0 24px 70px rgba(77, 43, 18, 0.18);
-    backdrop-filter: blur(12px);
+    background: white;
+    border-radius: 30px;
+    padding: 40px;
+    box-shadow: 0 18px 45px rgba(80, 45, 20, 0.14);
   }
 
-  .top-bar {
+  .top-row,
+  .headline-row {
     display: flex;
     justify-content: space-between;
-    gap: 20px;
     align-items: center;
-    margin-bottom: 30px;
+    gap: 16px;
   }
 
-  .eyebrow {
-    margin: 0 0 10px;
-    color: #a56a3d;
+  .back-link {
+    text-decoration: none;
+    color: #8b4a24;
     font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    font-size: 0.8rem;
+  }
+
+  button,
+  .new-button {
+    border: none;
+    border-radius: 999px;
+    padding: 12px 18px;
+    background: #8b4a24;
+    color: white;
+    font-weight: 800;
+    cursor: pointer;
+    text-decoration: none;
   }
 
   h1 {
+    margin: 34px 0 18px;
+    font-size: 42px;
+  }
+
+  h2 {
     margin: 0;
-    font-size: clamp(2.2rem, 5vw, 4rem);
-    letter-spacing: -2px;
+    font-size: 28px;
   }
 
-  .logout-button {
-    border: none;
-    border-radius: 999px;
-    padding: 14px 22px;
-    background: #3d2415;
-    color: white;
-    font-weight: 900;
-    cursor: pointer;
-    box-shadow: 0 12px 26px rgba(61, 36, 21, 0.22);
-  }
-
-  .user-card {
-    display: flex;
-    align-items: center;
-    gap: 18px;
-    padding: 22px;
-    border-radius: 24px;
-    background: #fff8ef;
+  .user-box {
+    background: #fff7ec;
+    border-radius: 22px;
+    padding: 20px;
     margin-bottom: 34px;
   }
 
-  .avatar {
-    width: 74px;
-    height: 74px;
-    border-radius: 50%;
-    background: #3d2415;
-    color: white;
-    display: grid;
-    place-items: center;
-    font-size: 2rem;
-    font-weight: 900;
+  .user-box p {
+    margin: 8px 0;
+    color: #7a5a43;
   }
 
-  .user-card h2 {
-    margin: 0 0 6px;
-    font-size: 1.5rem;
+  .recipe-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-top: 22px;
   }
 
-  .user-card p {
-    margin: 0;
-    color: #6f5646;
-  }
-
-  .recipes-header {
+  .recipe-item {
     display: flex;
     justify-content: space-between;
-    gap: 20px;
+    gap: 18px;
     align-items: center;
-    margin-bottom: 22px;
-  }
-
-  .recipes-header h2 {
-    margin: 0;
-    font-size: 2rem;
-  }
-
-  .new-button {
-    text-decoration: none;
-    background: #3d2415;
-    color: white;
-    padding: 14px 22px;
-    border-radius: 999px;
-    font-weight: 900;
-  }
-
-  .recipes-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 22px;
-  }
-
-  .recipe-card {
+    padding: 20px;
+    border-radius: 20px;
+    background: #fffaf4;
     text-decoration: none;
     color: inherit;
-    border-radius: 26px;
-    overflow: hidden;
-    background: #fffaf3;
-    border: 2px solid #f2d7b8;
+    border: 1px solid #f0dfcd;
   }
 
-  .recipe-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 20px 40px rgba(61, 36, 21, 0.12);
+  .recipe-item h3 {
+    margin: 0 0 6px;
+    font-size: 21px;
   }
 
-  .recipe-content {
-    padding: 22px;
-  }
-
-  .recipe-top {
-    display: flex;
-    justify-content: space-between;
-    gap: 14px;
-    align-items: flex-start;
-    margin-bottom: 12px;
-  }
-
-  .recipe-top h3 {
+  .recipe-item p {
     margin: 0;
-    font-size: 1.3rem;
+    color: #7a5a43;
   }
 
-  .badge {
-    background: #f5e1ca;
-    color: #8a5a2f;
-    padding: 6px 10px;
+  .recipe-item span {
+    background: #f2ddc7;
+    color: #6f3719;
     border-radius: 999px;
-    font-size: 0.8rem;
+    padding: 8px 12px;
     font-weight: 800;
     white-space: nowrap;
+    font-size: 13px;
   }
 
-  .recipe-card p {
-    color: #6f5646;
-    line-height: 1.5;
-    margin-bottom: 20px;
+  .status {
+    margin-top: 28px;
+    color: #7a5a43;
   }
 
-  .recipe-meta {
-    display: flex;
-    justify-content: space-between;
-    gap: 10px;
-    color: #8a5a2f;
-    font-weight: 700;
-    font-size: 0.92rem;
-  }
-
-  .state-box,
-  .error-box,
-  .empty-box {
-    border-radius: 18px;
-    padding: 16px;
-    font-weight: 700;
-  }
-
-  .state-box,
-  .empty-box {
-    background: #fff7ec;
-  }
-
-  .error-box {
-    background: #fff0ec;
-    color: #b42318;
+  .status.error {
+    color: #9b1c1c;
   }
 
   @media (max-width: 700px) {
-    .account-page {
-      padding: 96px 16px 28px;
-    }
-
-    .brand-link {
-      top: 20px;
-      left: 20px;
-      font-size: 1.55rem;
-    }
-
     .account-card {
-      padding: 24px;
-      border-radius: 24px;
+      padding: 28px;
     }
 
-    .top-bar,
-    .recipes-header,
-    .recipe-top,
-    .recipe-meta {
+    .top-row,
+    .headline-row,
+    .recipe-item {
       flex-direction: column;
       align-items: flex-start;
     }
 
-    .logout-button,
-    .new-button {
-      width: 100%;
-      text-align: center;
-      box-sizing: border-box;
+    h1 {
+      font-size: 34px;
     }
   }
 </style>

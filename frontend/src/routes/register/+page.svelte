@@ -1,116 +1,171 @@
+<script lang="ts">
+  import { register } from "$lib/api";
+
+  let username = $state("");
+  let email = $state("");
+  let password = $state("");
+  let error = $state("");
+  let success = $state("");
+
+  async function handleRegister() {
+    error = "";
+    success = "";
+
+    try {
+      await register(username, email, password);
+      success = "Registrierung erfolgreich. Du kannst dich jetzt einloggen.";
+
+      username = "";
+      email = "";
+      password = "";
+    } catch (err) {
+      error = err instanceof Error ? err.message : "Registrierung fehlgeschlagen.";
+    }
+  }
+</script>
+
 <main class="auth-page">
-  <a href="/" class="brand-link" aria-label="Zur Startseite">
-    SmartC<span class="cookie-o">🍪</span><span class="cookie-o">🍪</span>kies
+  <a href="/" class="brand-link">
+    SmartC<span>🍪</span><span>🍪</span>kies
   </a>
 
   <section class="auth-card">
     <h1>Registrieren</h1>
-    <p>Registriere dich, um Rezepte hochzuladen und zu bewerten.</p>
+    <p>Erstelle dein Konto und speichere eigene Rezepte.</p>
 
-    <form>
+    {#if error}
+      <div class="error">{error}</div>
+    {/if}
+
+    {#if success}
+      <div class="success">{success}</div>
+    {/if}
+
+    <form
+      onsubmit={(e) => {
+        e.preventDefault();
+        handleRegister();
+      }}
+    >
       <label for="username">Benutzername</label>
-      <input id="username" type="text" placeholder="Benutzername eingeben" />
+      <input id="username" bind:value={username} required />
 
       <label for="email">E-Mail</label>
-      <input id="email" type="email" placeholder="E-Mail eingeben" />
+      <input id="email" type="email" bind:value={email} required />
 
       <label for="password">Passwort</label>
-      <input id="password" type="password" placeholder="Passwort eingeben" />
+      <input id="password" type="password" bind:value={password} required />
 
-      <button type="submit" class="primary">Registrieren</button>
+      <button type="submit">Registrieren</button>
     </form>
+
+    <p class="switch">
+      Schon ein Konto?
+      <a href="/login">Einloggen</a>
+    </p>
   </section>
 </main>
 
 <style>
-  :global(body) {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background: linear-gradient(135deg, #fff7ed, #f3dfc8);
-    color: #2b2118;
-  }
-
   .auth-page {
     min-height: 100vh;
+    background: #fff7ec;
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 80px 24px 24px;
-    box-sizing: border-box;
+    padding: 32px;
+    font-family: Arial, sans-serif;
   }
 
   .brand-link {
     position: fixed;
-    top: 20px;
-    left: 28px;
-    color: #8b552b;
-    font-size: 24px;
-    font-weight: 800;
+    top: 28px;
+    left: 36px;
     text-decoration: none;
-    display: flex;
-    align-items: center;
-    gap: 0;
-    z-index: 10;
-  }
-
-  .cookie-o {
-    font-size: 0.72em;
-    line-height: 1;
-    display: inline-flex;
-    transform: translateY(1px);
-    margin-left: -3px;
-    margin-right: -3px;
+    color: #3b2416;
+    font-size: 26px;
+    font-weight: 800;
   }
 
   .auth-card {
     width: 100%;
-    max-width: 620px;
-    background: #fffaf4;
-    padding: 36px 44px;
-    border-radius: 24px;
-    box-shadow: 0 14px 35px rgba(92, 55, 25, 0.14);
+    max-width: 420px;
+    background: #ffffff;
+    border-radius: 28px;
+    padding: 38px;
+    box-shadow: 0 18px 45px rgba(80, 45, 20, 0.14);
   }
 
   h1 {
-    font-size: 40px;
-    margin: 0 0 16px;
-    color: #3b2415;
+    margin: 0;
+    color: #3b2416;
+    font-size: 38px;
   }
 
   p {
-    font-size: 18px;
-    color: #6d5140;
-    margin: 0 0 26px;
+    color: #7a5a43;
   }
 
   form {
     display: flex;
     flex-direction: column;
     gap: 12px;
+    margin-top: 24px;
   }
 
   label {
-    font-size: 20px;
-    font-weight: 800;
+    color: #3b2416;
+    font-weight: 700;
   }
 
   input {
-    height: 50px;
-    border-radius: 12px;
-    border: 1px solid #d8c3ad;
-    padding: 0 16px;
-    font-size: 18px;
+    border: 1px solid #ead8c3;
+    border-radius: 16px;
+    padding: 14px;
+    font-size: 15px;
+    outline: none;
+    background: #fffaf4;
   }
 
-  .primary {
-    height: 54px;
-    border-radius: 14px;
-    font-size: 20px;
-    font-weight: 800;
-    margin-top: 18px;
-    cursor: pointer;
-    background: #8b552b;
-    color: white;
+  button {
+    margin-top: 14px;
     border: none;
+    border-radius: 999px;
+    padding: 15px;
+    background: #8b4a24;
+    color: white;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  button:hover {
+    background: #6f3719;
+  }
+
+  .error,
+  .success {
+    margin-top: 18px;
+    padding: 12px;
+    border-radius: 14px;
+  }
+
+  .error {
+    background: #ffe6e6;
+    color: #9b1c1c;
+  }
+
+  .success {
+    background: #e7f8ec;
+    color: #19743a;
+  }
+
+  .switch {
+    text-align: center;
+    margin-top: 20px;
+  }
+
+  .switch a {
+    color: #8b4a24;
+    font-weight: 800;
   }
 </style>

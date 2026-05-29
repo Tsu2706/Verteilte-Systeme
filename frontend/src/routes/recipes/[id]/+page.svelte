@@ -1,322 +1,262 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { browser } from "$app/environment";
   import { page } from "$app/stores";
-  import { getRecipe, type Recipe } from "$lib/api";
+  import { getRecipe, deleteRecipe, type Recipe } from "$lib/api";
 
   let recipe = $state<Recipe | null>(null);
   let loading = $state(true);
   let error = $state("");
+  let isLoggedIn = $state(false);
 
-  onMount(async () => {
-    const id = $page.params.id;
-
-    if (!id) {
-      error = "Keine Rezept-ID gefunden.";
-      loading = false;
-      return;
-    }
+  async function loadRecipe() {
+    loading = true;
+    error = "";
 
     try {
-      recipe = await getRecipe(Number(id));
+      const id = Number($page.params.id);
+      recipe = await getRecipe(id);
     } catch (err) {
-      error = "Rezept konnte nicht geladen werden.";
-      console.error(err);
+      error = err instanceof Error ? err.message : "Rezept konnte nicht geladen werden.";
     } finally {
       loading = false;
+    }
+  }
+
+  async function handleDelete() {
+    if (!recipe) return;
+
+    const confirmed = confirm("Möchtest du dieses Rezept wirklich löschen?");
+    if (!confirmed) return;
+
+    try {
+      await deleteRecipe(recipe.id);
+      window.location.href = "/recipes";
+    } catch (err) {
+      error = err instanceof Error ? err.message : "Rezept konnte nicht gelöscht werden.";
+    }
+  }
+
+  $effect(() => {
+    if (browser) {
+      isLoggedIn = !!localStorage.getItem("token");
+      loadRecipe();
     }
   });
 </script>
 
 <main class="detail-page">
-  <a href="/" class="brand-link" aria-label="Zur Startseite">
-    SmartC<span class="cookie-o">🍪</span><span class="cookie-o">🍪</span>kies
+  <a href="/" class="brand-link">
+    SmartC<span>🍪</span><span>🍪</span>kies
   </a>
 
   <section class="detail-card">
-    <div class="top-actions">
-      <a href="/recipes" class="back-link">
-        ← Zurück zu den Rezepten
-      </a>
-
-      {#if recipe}
-        <a href={`/recipes/${recipe.id}/edit`} class="edit-button">
-          Rezept bearbeiten
-        </a>
-      {/if}
-    </div>
+    <a href="/recipes" class="back-link">← Zurück zu den Rezepten</a>
 
     {#if loading}
-      <div class="status-card">
-        <p>Rezept wird geladen...</p>
-      </div>
+      <p class="status">Rezept wird geladen...</p>
     {:else if error}
-      <div class="status-card">
-        <p>{error}</p>
-      </div>
+      <p class="status error">{error}</p>
     {:else if recipe}
-      <div class="recipe-header">
+      <div class="title-row">
         <div>
-          <p class="eyebrow">
-            Öffentliches Rezept
-          </p>
-
+          <p class="eyebrow">{recipe.difficulty || "Rezept"}</p>
           <h1>{recipe.title}</h1>
-
-          {#if recipe.description}
-            <p class="description">{recipe.description}</p>
-          {/if}
         </div>
 
-        <div class="cookie-badge">🍪</div>
+        {#if isLoggedIn}
+          <div class="actions">
+            <a href={`/recipes/${recipe.id}/edit`} class="edit-button">Bearbeiten</a>
+            <button onclick={handleDelete} class="delete-button">Löschen</button>
+          </div>
+        {/if}
       </div>
 
-      <div class="meta-row">
+      {#if recipe.description}
+        <p class="description">{recipe.description}</p>
+      {/if}
+
+      <div class="meta">
         {#if recipe.time}
-          <div class="meta-card">
-            <span>⏱</span>
-            <p>{recipe.time}</p>
-          </div>
+          <span>{recipe.time}</span>
         {/if}
 
-        {#if recipe.difficulty}
-          <div class="meta-card">
-            <span>⭐</span>
-            <p>{recipe.difficulty}</p>
-          </div>
+        <span>{recipe.ingredients?.length || 0} Zutaten</span>
+        <span>{recipe.steps?.length || 0} Schritte</span>
+      </div>
+
+      <section class="content-section">
+        <h2>Zutaten</h2>
+
+        {#if recipe.ingredients && recipe.ingredients.length > 0}
+          <ul>
+            {#each recipe.ingredients as ingredient}
+              <li>{ingredient}</li>
+            {/each}
+          </ul>
+        {:else}
+          <p>Keine Zutaten vorhanden.</p>
         {/if}
-      </div>
+      </section>
 
-      <div class="content-grid">
-        <section class="info-box">
-          <h2>Zutaten</h2>
+      <section class="content-section">
+        <h2>Zubereitung</h2>
 
-          {#if recipe.ingredients}
-            <p>{recipe.ingredients}</p>
-          {:else}
-            <p>Keine Zutaten vorhanden.</p>
-          {/if}
-        </section>
-
-        <section class="info-box">
-          <h2>Zubereitung</h2>
-
-          {#if recipe.instructions}
-            <p>{recipe.instructions}</p>
-          {:else}
-            <p>Keine Zubereitungsschritte vorhanden.</p>
-          {/if}
-        </section>
-      </div>
+        {#if recipe.steps && recipe.steps.length > 0}
+          <ol>
+            {#each recipe.steps as step}
+              <li>{step}</li>
+            {/each}
+          </ol>
+        {:else}
+          <p>Keine Schritte vorhanden.</p>
+        {/if}
+      </section>
     {/if}
   </section>
 </main>
 
 <style>
-  :global(body) {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background: linear-gradient(135deg, #fff7ed, #f3dfc8);
-    color: #3b2415;
-  }
-
   .detail-page {
     min-height: 100vh;
-    padding: 90px 24px 40px;
-    box-sizing: border-box;
+    background: #fff7ec;
+    padding: 100px 28px 40px;
+    font-family: Arial, sans-serif;
+    color: #3b2416;
   }
 
   .brand-link {
-    position: absolute;
-    top: 20px;
-    left: 28px;
-    color: #8b552b;
-    font-size: 24px;
-    font-weight: 800;
+    position: fixed;
+    top: 28px;
+    left: 36px;
+    z-index: 10;
     text-decoration: none;
-    display: flex;
-    align-items: center;
-  }
-
-  .cookie-o {
-    font-size: 0.72em;
-    line-height: 1;
-    display: inline-flex;
-    transform: translateY(1px);
-    margin-left: -3px;
-    margin-right: -3px;
+    color: #3b2416;
+    font-size: 26px;
+    font-weight: 800;
   }
 
   .detail-card {
-    max-width: 1180px;
+    max-width: 860px;
     margin: 0 auto;
-    background: #fffaf4;
+    background: white;
     border-radius: 30px;
-    padding: 42px;
-    box-shadow: 0 12px 30px rgba(92, 55, 25, 0.12);
-  }
-
-  .top-actions {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 18px;
-    margin-bottom: 34px;
+    padding: 40px;
+    box-shadow: 0 18px 45px rgba(80, 45, 20, 0.14);
   }
 
   .back-link {
-    color: #9b551d;
     text-decoration: none;
+    color: #8b4a24;
     font-weight: 800;
   }
 
-  .edit-button {
-    text-decoration: none;
-    background: #3d2415;
-    color: white;
-    padding: 14px 22px;
-    border-radius: 999px;
-    font-weight: 900;
-    box-shadow: 0 12px 26px rgba(61, 36, 21, 0.22);
-  }
-
-  .recipe-header {
+  .title-row {
     display: flex;
     justify-content: space-between;
-    gap: 28px;
+    gap: 24px;
     align-items: flex-start;
+    margin-top: 30px;
   }
 
   .eyebrow {
-    color: #a35b27;
+    margin: 0 0 8px;
+    color: #8b4a24;
     font-weight: 800;
-    font-size: 18px;
-    margin: 0 0 14px;
   }
 
   h1 {
     margin: 0;
-    font-size: 56px;
-    line-height: 0.95;
-    color: #4a2c1a;
-    letter-spacing: -2px;
+    font-size: 44px;
   }
 
   .description {
-    margin: 24px 0 0;
-    max-width: 760px;
-    color: #6d5140;
+    margin-top: 22px;
+    color: #7a5a43;
     font-size: 18px;
-    line-height: 1.5;
+    line-height: 1.6;
   }
 
-  .cookie-badge {
-    min-width: 90px;
-    height: 90px;
-    border-radius: 26px;
-    background: #fff0dd;
+  .meta {
     display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 52px;
-  }
-
-  .meta-row {
-    margin-top: 34px;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 16px;
-  }
-
-  .meta-card {
-    background: #fff0dd;
-    border-radius: 22px;
-    padding: 18px;
-    display: flex;
-    align-items: center;
+    flex-wrap: wrap;
     gap: 12px;
+    margin: 28px 0;
   }
 
-  .meta-card span {
-    font-size: 24px;
-  }
-
-  .meta-card p {
-    margin: 0;
-    color: #4a2c1a;
+  .meta span {
+    background: #f2ddc7;
+    color: #6f3719;
+    padding: 9px 14px;
+    border-radius: 999px;
     font-weight: 800;
+    font-size: 14px;
   }
 
-  .content-grid {
-    margin-top: 28px;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 22px;
+  .actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
   }
 
-  .info-box {
-    background: #fff0dd;
-    border-radius: 24px;
-    padding: 26px;
+  .edit-button,
+  .delete-button {
+    border: none;
+    border-radius: 999px;
+    padding: 11px 16px;
+    font-weight: 800;
+    cursor: pointer;
+    text-decoration: none;
+    font-size: 14px;
   }
 
-  .info-box h2 {
-    margin: 0 0 18px;
-    color: #4a2c1a;
-    font-size: 28px;
+  .edit-button {
+    background: #8b4a24;
+    color: white;
   }
 
-  .info-box p,
-  .status-card p {
-    margin: 0;
-    color: #6d5140;
-    font-size: 18px;
-    line-height: 1.7;
-    white-space: pre-line;
+  .delete-button {
+    background: #ffe6e6;
+    color: #9b1c1c;
   }
 
-  .status-card {
-    text-align: center;
-    padding: 34px;
+  .content-section {
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid #f0dfcd;
   }
 
-  @media (max-width: 750px) {
-    .brand-link {
-      position: static;
-      margin-bottom: 20px;
-    }
+  h2 {
+    margin: 0 0 16px;
+    font-size: 26px;
+  }
 
-    .detail-page {
-      padding-top: 24px;
-    }
+  ul,
+  ol {
+    padding-left: 24px;
+    color: #7a5a43;
+    line-height: 1.8;
+  }
 
+  .status {
+    margin-top: 30px;
+    color: #7a5a43;
+  }
+
+  .status.error {
+    color: #9b1c1c;
+  }
+
+  @media (max-width: 700px) {
     .detail-card {
       padding: 28px;
     }
 
-    .top-actions,
-    .recipe-header {
+    .title-row {
       flex-direction: column;
-      align-items: flex-start;
     }
 
     h1 {
-      font-size: 42px;
-    }
-
-    .content-grid {
-      grid-template-columns: 1fr;
-    }
-
-    .cookie-badge {
-      min-width: 74px;
-      height: 74px;
-      font-size: 42px;
-    }
-
-    .edit-button {
-      width: 100%;
-      text-align: center;
-      box-sizing: border-box;
+      font-size: 34px;
     }
   }
 </style>

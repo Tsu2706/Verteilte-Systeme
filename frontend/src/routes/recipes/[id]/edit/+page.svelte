@@ -1,370 +1,279 @@
 <script lang="ts">
-  import { onMount } from "svelte";
-  import { goto } from "$app/navigation";
+  import { browser } from "$app/environment";
   import { page } from "$app/stores";
-  import { getRecipe, updateRecipe, deleteRecipe } from "$lib/api";
+  import { getRecipe, updateRecipe, type Recipe } from "$lib/api";
 
-  const id = Number($page.params.id);
-
+  let recipe = $state<Recipe | null>(null);
   let title = $state("");
   let description = $state("");
-  let ingredients = $state("");
-  let instructions = $state("");
   let time = $state("");
   let difficulty = $state("");
-  let image_url = $state("");
-
+  let ingredientsText = $state("");
+  let stepsText = $state("");
+  let isPublic = $state(true);
   let loading = $state(true);
-  let saving = $state(false);
   let error = $state("");
-  let success = $state("");
 
-  onMount(async () => {
+  function arrayToLines(values: string[] | undefined) {
+    return values?.join("\n") ?? "";
+  }
+
+  function linesToArray(value: string) {
+    return value
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean);
+  }
+
+  async function loadRecipe() {
+    loading = true;
+    error = "";
+
     try {
-      const recipe = await getRecipe(id);
+      const id = Number($page.params.id);
+      recipe = await getRecipe(id);
 
-      title = recipe.title ?? "";
+      title = recipe.title;
       description = recipe.description ?? "";
-      ingredients = recipe.ingredients ?? "";
-      instructions = recipe.instructions ?? "";
       time = recipe.time ?? "";
       difficulty = recipe.difficulty ?? "";
-      image_url = recipe.image_url ?? "";
+      ingredientsText = arrayToLines(recipe.ingredients);
+      stepsText = arrayToLines(recipe.steps);
+      isPublic = recipe.is_public;
     } catch (err) {
-      error = "Das Rezept konnte nicht geladen werden.";
+      error = err instanceof Error ? err.message : "Rezept konnte nicht geladen werden.";
     } finally {
       loading = false;
     }
-  });
+  }
 
-  async function saveRecipe() {
+  async function handleSubmit() {
+    if (!recipe) return;
+
     error = "";
-    success = "";
-    saving = true;
 
     try {
-      await updateRecipe(id, {
+      await updateRecipe(recipe.id, {
         title,
         description,
-        ingredients,
-        instructions,
         time,
         difficulty,
-        image_url
+        ingredients: linesToArray(ingredientsText),
+        steps: linesToArray(stepsText),
+        is_public: isPublic
       });
 
-      success = "Rezept wurde erfolgreich gespeichert.";
-      setTimeout(() => goto(`/recipes/${id}`), 700);
+      window.location.href = `/recipes/${recipe.id}`;
     } catch (err) {
-      error = "Das Rezept konnte nicht gespeichert werden.";
-    } finally {
-      saving = false;
+      error = err instanceof Error ? err.message : "Rezept konnte nicht gespeichert werden.";
     }
   }
 
-  async function removeRecipe() {
-    const confirmed = confirm("Möchtest du dieses Rezept wirklich löschen?");
+  $effect(() => {
+    if (browser) {
+      if (!localStorage.getItem("token")) {
+        window.location.href = "/login";
+        return;
+      }
 
-    if (!confirmed) return;
-
-    try {
-      await deleteRecipe(id);
-      goto("/recipes");
-    } catch (err) {
-      error = "Das Rezept konnte nicht gelöscht werden.";
+      loadRecipe();
     }
-  }
+  });
 </script>
 
 <main class="edit-page">
-  <a href="/" class="brand-link" aria-label="Zur Startseite">
-    SmartC<span class="cookie-o">🍪</span><span class="cookie-o">🍪</span>kies
+  <a href="/" class="brand-link">
+    SmartC<span>🍪</span><span>🍪</span>kies
   </a>
 
   <section class="form-card">
-    <a href={`/recipes/${id}`} class="back-link">← Zurück zum Rezept</a>
+    <a href={recipe ? `/recipes/${recipe.id}` : "/recipes"} class="back-link">
+      ← Zurück
+    </a>
 
     <h1>Rezept bearbeiten</h1>
-    <p>Passe dein Rezept an oder lösche es dauerhaft.</p>
+    <p>Bearbeite dein bestehendes Rezept oder passe einzelne Angaben an.</p>
 
     {#if loading}
-      <div class="state-box">Rezept wird geladen...</div>
+      <p class="status">Rezept wird geladen...</p>
+    {:else if error}
+      <div class="error">{error}</div>
     {:else}
-      {#if error}
-        <div class="error-box">{error}</div>
-      {/if}
-
-      {#if success}
-        <div class="success-box">{success}</div>
-      {/if}
-
       <form
-        onsubmit={(event) => {
-          event.preventDefault();
-          saveRecipe();
+        onsubmit={(e) => {
+          e.preventDefault();
+          handleSubmit();
         }}
       >
         <label for="title">Rezeptname</label>
-        <input
-          id="title"
-          bind:value={title}
-          type="text"
-          placeholder="z. B. Schoko-Cookies"
-          required
-        />
+        <input id="title" bind:value={title} required />
 
         <label for="description">Beschreibung</label>
-        <textarea
-          id="description"
-          bind:value={description}
-          placeholder="Kurze Beschreibung"
-        ></textarea>
+        <textarea id="description" bind:value={description}></textarea>
 
-        <label for="ingredients">Zutaten</label>
-        <textarea
-          id="ingredients"
-          bind:value={ingredients}
-          placeholder="Zutaten eingeben"
-        ></textarea>
-
-        <label for="instructions">Zubereitung</label>
-        <textarea
-          id="instructions"
-          bind:value={instructions}
-          placeholder="Zubereitungsschritte eingeben"
-        ></textarea>
-
-        <div class="form-grid">
+        <div class="row">
           <div>
             <label for="time">Zubereitungszeit</label>
-            <input
-              id="time"
-              bind:value={time}
-              type="text"
-              placeholder="z. B. 30 Minuten"
-            />
+            <input id="time" bind:value={time} />
           </div>
 
           <div>
             <label for="difficulty">Schwierigkeit</label>
-            <input
-              id="difficulty"
-              bind:value={difficulty}
-              type="text"
-              placeholder="z. B. Einfach"
-            />
+            <input id="difficulty" bind:value={difficulty} />
           </div>
         </div>
 
-        <label for="image_url">Bild-URL</label>
-        <input
-          id="image_url"
-          bind:value={image_url}
-          type="text"
-          placeholder="https://..."
-        />
+        <label for="ingredients">Zutaten</label>
+        <textarea id="ingredients" bind:value={ingredientsText} required></textarea>
 
-        <div class="actions">
-          <button type="button" class="delete-button" onclick={removeRecipe}>
-            Löschen
-          </button>
+        <label for="steps">Zubereitungsschritte</label>
+        <textarea id="steps" bind:value={stepsText} required></textarea>
 
-          <button type="submit" class="save-button" disabled={saving}>
-            {saving ? "Speichern..." : "Änderungen speichern"}
-          </button>
-        </div>
+        <label class="checkbox">
+          <input type="checkbox" bind:checked={isPublic} />
+          Rezept öffentlich anzeigen
+        </label>
+
+        <button type="submit">Änderungen speichern</button>
       </form>
     {/if}
   </section>
 </main>
 
 <style>
-  :global(body) {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background:
-      radial-gradient(circle at top left, #ffe1b8 0, transparent 34%),
-      linear-gradient(135deg, #fff7ec 0%, #f6d7aa 100%);
-    color: #3d2415;
-  }
-
   .edit-page {
     min-height: 100vh;
-    padding: 110px 24px 40px;
-    box-sizing: border-box;
+    background: #fff7ec;
+    padding: 100px 28px 40px;
+    font-family: Arial, sans-serif;
+    color: #3b2416;
   }
 
   .brand-link {
     position: fixed;
     top: 28px;
-    left: 34px;
-    z-index: 20;
+    left: 36px;
+    z-index: 10;
     text-decoration: none;
-    font-size: 2rem;
-    font-weight: 900;
-    color: #3d2415;
-    letter-spacing: -1px;
-  }
-
-  .cookie-o {
-    display: inline-block;
-    margin: 0 -2px;
-    font-size: 1.65rem;
-    vertical-align: 2px;
+    color: #3b2416;
+    font-size: 26px;
+    font-weight: 800;
   }
 
   .form-card {
-    width: min(820px, 100%);
+    max-width: 760px;
     margin: 0 auto;
-    padding: 34px;
-    border-radius: 32px;
-    background: rgba(255, 255, 255, 0.78);
-    box-shadow: 0 24px 70px rgba(77, 43, 18, 0.18);
-    backdrop-filter: blur(12px);
+    background: white;
+    border-radius: 28px;
+    padding: 38px;
+    box-shadow: 0 18px 45px rgba(80, 45, 20, 0.14);
   }
 
   .back-link {
-    display: inline-block;
-    margin-bottom: 18px;
-    color: #8a5a2f;
-    font-weight: 700;
     text-decoration: none;
+    color: #8b4a24;
+    font-weight: 800;
   }
 
   h1 {
-    margin: 0;
-    font-size: clamp(2.2rem, 5vw, 4rem);
-    letter-spacing: -2px;
+    margin: 26px 0 8px;
+    font-size: 42px;
   }
 
   p {
-    margin: 12px 0 28px;
-    color: #6f5646;
-    font-size: 1.05rem;
+    color: #7a5a43;
   }
 
   form {
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 13px;
+    margin-top: 28px;
   }
 
   label {
     font-weight: 800;
-    color: #4a2b18;
   }
 
   input,
   textarea {
-    width: 100%;
-    box-sizing: border-box;
-    border: 2px solid #efd1ad;
-    border-radius: 18px;
-    padding: 14px 16px;
-    font: inherit;
-    background: #fffaf3;
-    color: #3d2415;
+    border: 1px solid #ead8c3;
+    border-radius: 16px;
+    padding: 14px;
+    font-size: 15px;
     outline: none;
+    background: #fffaf4;
+    font-family: inherit;
   }
 
   textarea {
-    min-height: 105px;
+    min-height: 110px;
     resize: vertical;
   }
 
-  input:focus,
-  textarea:focus {
-    border-color: #c87a35;
-    box-shadow: 0 0 0 4px rgba(200, 122, 53, 0.14);
-  }
-
-  .form-grid {
+  .row {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 16px;
+    gap: 18px;
   }
 
-  .actions {
+  .row div {
     display: flex;
-    justify-content: space-between;
-    gap: 14px;
-    margin-top: 18px;
+    flex-direction: column;
+    gap: 13px;
+  }
+
+  .checkbox {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #7a5a43;
+  }
+
+  .checkbox input {
+    width: 18px;
+    height: 18px;
   }
 
   button {
+    margin-top: 16px;
     border: none;
     border-radius: 999px;
-    padding: 14px 22px;
-    font-weight: 900;
+    padding: 15px;
+    background: #8b4a24;
+    color: white;
+    font-weight: 800;
     cursor: pointer;
   }
 
   button:hover {
-    transform: translateY(-2px);
+    background: #6f3719;
   }
 
-  .save-button {
-    background: #3d2415;
-    color: white;
-    box-shadow: 0 12px 26px rgba(61, 36, 21, 0.22);
+  .error {
+    margin-top: 18px;
+    padding: 12px;
+    border-radius: 14px;
+    background: #ffe6e6;
+    color: #9b1c1c;
   }
 
-  .delete-button {
-    background: #fff0ec;
-    color: #b42318;
-    border: 2px solid #ffd0c7;
-  }
-
-  button:disabled {
-    opacity: 0.7;
-    cursor: not-allowed;
-  }
-
-  .state-box,
-  .error-box,
-  .success-box {
-    border-radius: 18px;
-    padding: 14px 16px;
-    margin-bottom: 18px;
-    font-weight: 700;
-  }
-
-  .state-box {
-    background: #fff7ec;
-  }
-
-  .error-box {
-    background: #fff0ec;
-    color: #b42318;
-  }
-
-  .success-box {
-    background: #ecfdf3;
-    color: #027a48;
+  .status {
+    margin-top: 28px;
+    color: #7a5a43;
   }
 
   @media (max-width: 700px) {
-    .edit-page {
-      padding: 96px 16px 28px;
-    }
-
-    .brand-link {
-      top: 20px;
-      left: 20px;
-      font-size: 1.55rem;
-    }
-
-    .form-card {
-      padding: 24px;
-      border-radius: 24px;
-    }
-
-    .form-grid {
+    .row {
       grid-template-columns: 1fr;
     }
 
-    .actions {
-      flex-direction: column;
+    .form-card {
+      padding: 28px;
+    }
+
+    h1 {
+      font-size: 34px;
     }
   }
 </style>
