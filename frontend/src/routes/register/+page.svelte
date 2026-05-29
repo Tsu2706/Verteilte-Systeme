@@ -78,7 +78,7 @@
   }
 
   .brand-link {
-    position: fixed;
+    position: absolute;
     top: 28px;
     left: 36px;
     text-decoration: none;

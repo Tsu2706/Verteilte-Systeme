@@ -132,7 +132,7 @@
   }
 
   .brand-link {
-    position: fixed;
+    position: absolute;
     top: 28px;
     left: 36px;
     z-index: 10;
