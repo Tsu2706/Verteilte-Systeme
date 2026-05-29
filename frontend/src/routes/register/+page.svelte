@@ -1,3 +1,24 @@
+<script lang="ts">
+  import { goto } from "$app/navigation";
+  import { register, login } from "$lib/api";
+
+  let username = $state("");
+  let email = $state("");
+  let password = $state("");
+
+  async function handleRegister(event: SubmitEvent) {
+    event.preventDefault();
+
+
+      await register(username, email, password);
+
+      // direkt danach anmelden
+      await login(username, password);
+
+      goto("/account");
+    
+  }
+</script>
 <main class="auth-page">
   <a href="/" class="brand-link" aria-label="Zur Startseite">
     SmartC<span class="cookie-o">🍪</span><span class="cookie-o">🍪</span>kies
@@ -7,15 +28,15 @@
     <h1>Registrieren</h1>
     <p>Registriere dich, um Rezepte hochzuladen und zu bewerten.</p>
 
-    <form>
+    <form onsubmit={handleRegister}>
       <label for="username">Benutzername</label>
-      <input id="username" type="text" placeholder="Benutzername eingeben" />
+      <input id="username" bind:value={username} type="text" placeholder="Benutzername eingeben" />
 
       <label for="email">E-Mail</label>
-      <input id="email" type="email" placeholder="E-Mail eingeben" />
+      <input id="email" bind:value={email} type="email" placeholder="E-Mail eingeben" />
 
       <label for="password">Passwort</label>
-      <input id="password" type="password" placeholder="Passwort eingeben" />
+      <input id="password" bind:value={password} type="password" placeholder="Passwort eingeben" />
 
       <button type="submit" class="primary">Registrieren</button>
     </form>

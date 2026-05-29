@@ -20,7 +20,8 @@
       user = await getMe();
       recipes = await getMyRecipes();
     } catch (err) {
-      error = "Dein Konto konnte nicht geladen werden.";
+      if (user === null)
+        error = "Dein Konto konnte nicht geladen werden.";
     } finally {
       loading = false;
     }

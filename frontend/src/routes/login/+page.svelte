@@ -1,3 +1,17 @@
+<script lang="ts">
+  import { goto } from "$app/navigation";
+  import { login } from "$lib/api";
+
+  let username = $state("");
+  let password = $state("");
+
+  async function handleLogin(event: SubmitEvent) {
+    event.preventDefault();
+      await login(username, password);
+      goto("/recipes");
+    
+  }
+</script>
 <main class="auth-page">
   <a href="/" class="brand-link" aria-label="Zur Startseite">
     SmartC<span class="cookie-o">🍪</span><span class="cookie-o">🍪</span>kies
@@ -7,14 +21,14 @@
     <h1>Anmelden</h1>
     <p>Melde dich an, um deine Rezepte zu verwalten.</p>
 
-    <form>
+    <form onsubmit={handleLogin}>
       <label for="username">Benutzername</label>
-      <input id="username" type="text" placeholder="Benutzername eingeben" />
+      <input id="username" bind:value={username} type="text" placeholder="Benutzername eingeben" />
 
       <label for="password">Passwort</label>
-      <input id="password" type="password" placeholder="Passwort eingeben" />
+      <input id="password" bind:value={password} type="password" placeholder="Passwort eingeben" />
 
-      <button type="submit" class="primary">Anmelden</button>
+      <button type="submit" class="primary" >Anmelden</button>
       <a href="/register" class="secondary">Registrieren</a>
     </form>
   </section>
