@@ -54,6 +54,7 @@ class RecipeCreate(BaseModel):
     tag_ids: list[int] = []
     time: str | None = None
     difficulty: str | None = None
+    tag_ids: list[int] | None = None
 
 class RecipeResponse(BaseModel):
     id: int
@@ -79,6 +80,7 @@ class RecipeUpdate(BaseModel):
     is_public: bool | None = None
     time: str | None = None
     difficulty: str | None = None
+    tag_ids: list[int] | None = None
 
 # rating
 class RatingCreate(BaseModel):

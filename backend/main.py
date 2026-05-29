@@ -352,6 +352,22 @@ def rate_recipe(
 
     return rating
 
+@app.delete("/tags/{tag_id}", status_code=204)
+def delete_tag(
+    tag_id: int,
+    db: Session = Depends(get_db),
+    current_username: str = Depends(get_current_user),
+):
+    tag = db.query(Tag).filter(Tag.id == tag_id).first()
+
+    if not tag:
+        raise HTTPException(status_code=404, detail="Tag not found")
+
+    db.delete(tag)
+    db.commit()
+
+    return None
+
 
 @app.get("/recipes/{recipe_id}/ratings")
 def get_recipe_ratings(

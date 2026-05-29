@@ -1,6 +1,6 @@
 <script lang="ts">
   import { browser } from "$app/environment";
-  import { createRecipe, getTags, createTag, type Tag } from "$lib/api";
+  import { createRecipe, getTags, createTag, deleteTag, type Tag } from "$lib/api";
 
   let title = $state("");
   let description = $state("");
@@ -54,9 +54,7 @@
   async function handleCreateTag() {
     error = "";
 
-    if (!newTagName.trim()) {
-      return;
-    }
+    if (!newTagName.trim()) return;
 
     try {
       const tag = await createTag(newTagName.trim());
@@ -65,6 +63,21 @@
       newTagName = "";
     } catch (err) {
       error = err instanceof Error ? err.message : "Tag konnte nicht erstellt werden.";
+    }
+  }
+
+  async function handleDeleteTag(tagId: number) {
+    error = "";
+
+    const confirmed = confirm("Möchtest du diesen Tag wirklich löschen?");
+    if (!confirmed) return;
+
+    try {
+      await deleteTag(tagId);
+      tags = tags.filter((tag) => tag.id !== tagId);
+      selectedTagIds = selectedTagIds.filter((id) => id !== tagId);
+    } catch (err) {
+      error = err instanceof Error ? err.message : "Tag konnte nicht gelöscht werden.";
     }
   }
 
@@ -145,13 +158,24 @@
         {#if tags.length > 0}
           <div class="tag-list">
             {#each tags as tag}
-              <button
-                type="button"
-                class:active={selectedTagIds.includes(tag.id)}
-                onclick={() => toggleTag(tag.id)}
-              >
-                {tag.name}
-              </button>
+              <div class="tag-item">
+                <button
+                  type="button"
+                  class:active={selectedTagIds.includes(tag.id)}
+                  onclick={() => toggleTag(tag.id)}
+                >
+                  {tag.name}
+                </button>
+
+                <button
+                  type="button"
+                  class="tag-delete-button"
+                  onclick={() => handleDeleteTag(tag.id)}
+                  aria-label={`Tag ${tag.name} löschen`}
+                >
+                  ×
+                </button>
+              </div>
             {/each}
           </div>
         {:else}
@@ -216,12 +240,6 @@
     font-weight: 800;
   }
 
-  .section-label {
-    margin: 0;
-    font-weight: 800;
-    color: #3b2416;
-  }
-
   .cookie-o {
     font-size: 0.72em;
     line-height: 1;
@@ -262,8 +280,14 @@
     margin-top: 28px;
   }
 
-  label {
+  label,
+  .section-label {
     font-weight: 800;
+    color: #3b2416;
+  }
+
+  .section-label {
+    margin: 0;
   }
 
   input,
@@ -310,7 +334,13 @@
     gap: 10px;
   }
 
-  .tag-list button {
+  .tag-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .tag-item > button:first-child {
     border: 1px solid #ead8c3;
     border-radius: 999px;
     background: #fffaf4;
@@ -320,10 +350,21 @@
     font-weight: 700;
   }
 
-  .tag-list button.active {
+  .tag-item > button:first-child.active {
     background: #8b4a24;
     color: white;
     border-color: #8b4a24;
+  }
+
+  .tag-delete-button {
+    border: none;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #ffe6e6;
+    color: #9b1c1c;
+    font-weight: 900;
+    cursor: pointer;
   }
 
   .new-tag-row {

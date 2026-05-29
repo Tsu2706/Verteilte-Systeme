@@ -96,13 +96,8 @@ export async function searchRecipes(
 ): Promise<Recipe[]> {
   const params = new URLSearchParams();
 
-  if (q.trim()) {
-    params.set("q", q.trim());
-  }
-
-  if (ingredient.trim()) {
-    params.set("ingredient", ingredient.trim());
-  }
+  if (q.trim()) params.set("q", q.trim());
+  if (ingredient.trim()) params.set("ingredient", ingredient.trim());
 
   for (const tagId of tagIds) {
     params.append("tag_ids", String(tagId));
@@ -189,6 +184,15 @@ export async function createTag(name: string): Promise<Tag> {
   });
 
   return handleResponse(response);
+}
+
+export async function deleteTag(tagId: number): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/tags/${tagId}`, {
+    method: "DELETE",
+    headers: authHeaders()
+  });
+
+  await handleResponse(response);
 }
 
 export async function getMe(): Promise<User> {
