@@ -300,15 +300,15 @@ def delete_recipe(
 def rate_recipe(
     recipe_id: int,
     data: RatingCreate,
-    db: Session = Depends(get_db)):
+    db: Session = Depends(get_db),
+    current_username: str = Depends(get_current_user)
+):
+
     recipe = db.query(Recipe).filter(Recipe.id == recipe_id).first()
+    user = db.query(User).filter(User.username == current_username).first()
 
     if not recipe:
         raise HTTPException(status_code=404, detail="Recipe not found")
-
-    current_username: str = Depends(get_current_user)
-    user = db.query(User).filter(User.username == current_username).first()
-    
 
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -316,7 +316,7 @@ def rate_recipe(
     existing = db.query(Rating).filter(
         Rating.user_id == user.id,
         Rating.recipe_id == recipe_id
-        ).first()
+    ).first()
 
     if existing:
         existing.rating = data.rating

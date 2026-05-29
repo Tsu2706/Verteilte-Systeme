@@ -36,8 +36,8 @@ class Recipe(Base):
     is_public=Column(Boolean,default=True)
     created_at=Column(DateTime(timezone=True),server_default=func.now())
     tags = relationship("Tag", secondary=recipe_tags, back_populates="recipes")
-    time = Column(String, nullable=True)
-    difficulty = Column(String, nullable=True)
+    time = Column(String(50), nullable=True)
+    difficulty = Column(String(50), nullable=True)
 
 
 class Tag(Base):
