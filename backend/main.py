@@ -1,9 +1,18 @@
 from typing import Annotated
 
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import Depends, FastAPI, HTTPException, status, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
+
 from sqlalchemy.orm import Session
+from sqlalchemy import func
+from sqlalchemy import or_
+
+from models import Recipe, User, Rating, Tag
+from schemas import Token, UserRegister, UserResponse
+from schemas import RecipeCreate, RecipeResponse, RecipeUpdate, RatingCreate, RatingResponse, TagCreate, TagResponse
+from database import SessionLocal, Base, engine, get_db
+
 
 from auth import (
     DUMMY_HASH,
@@ -12,12 +21,8 @@ from auth import (
     get_password_hash,
     verify_password,
 )
-from database import Base, engine, get_db
-from models import User
-from schemas import Token, UserRegister, UserResponse
 
 # Tabellen anlegen (falls noch nicht vorhanden)
-Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Mein Projekt", version="0.1.0")
 
@@ -30,6 +35,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# option to make it safer
+@app.on_event("startup")
+def startup():
+    Base.metadata.create_all(bind=engine)
 # ---------------------------------------------------------------------------
 # Health Check
 # ---------------------------------------------------------------------------
@@ -70,6 +79,8 @@ def register(data: UserRegister, db: Session = Depends(get_db)):
     db.refresh(user)
 
     return user
+
+
 
 @app.post("/token", response_model=Token)
 def login(
@@ -123,7 +134,6 @@ def get_profile(
 
     return user
 
-
 # ---------------------------------------------------------------------------
 # TODO: Eure eigenen Endpoints hier einfügen
 # ---------------------------------------------------------------------------
@@ -140,3 +150,211 @@ def get_profile(
 #     db.commit()
 #     db.refresh(item)
 #     return item
+
+
+# get, patch, dlete recipe
+
+@app.get("/recipes/search")
+def filter_recipes(
+    q: str | None = None,
+    tag_ids: list[int] = Query([]),
+    db: Session = Depends(get_db),
+    current_username: str | None = Depends(get_current_user)
+):
+    query = db.query(Recipe)
+
+    # user filter
+    if current_username:
+        user = db.query(User).filter(User.username == current_username).first()
+        query = query.filter(
+            (Recipe.is_public == True) |
+            (Recipe.user_id == user.id)
+        )
+    else:
+        query = query.filter(Recipe.is_public == True)
+
+    # title + description filter
+    if q:
+        query = query.filter(
+            or_(
+                Recipe.title.ilike(f"%{q}%"),
+                Recipe.description.ilike(f"%{q}%")
+            )
+        )
+
+    # tag filtert
+    if tag_ids:
+        query = (
+            query
+            .join(Recipe.tags)
+            .filter(Tag.id.in_(tag_ids))
+            .group_by(Recipe.id)
+            .having(func.count(Tag.id) == len(tag_ids))
+        )
+
+    return query.all()
+
+@app.get("/recipes")
+def get_recipes(
+    db: Session = Depends(get_db),
+    current_username: str | None = Depends(get_current_user)
+):
+    query = db.query(Recipe)
+
+    if current_username:
+        user = db.query(User).filter(User.username == current_username).first()
+
+        # public + private
+        return query.filter(
+            (Recipe.is_public == True) |
+            (Recipe.user_id == user.id)
+        ).all()
+    # nur public
+    return query.filter(Recipe.is_public == True).all()
+
+
+@app.post("/recipes", response_model=RecipeResponse)
+def create_recipe(
+    data: RecipeCreate,
+    db: Session = Depends(get_db),
+    current_username: str = Depends(get_current_user)
+):
+    # get user
+    user = db.query(User).filter(User.username == current_username).first()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # build recipe
+    recipe = Recipe(
+        title=data.title,
+        description=data.description,
+        ingredients=data.ingredients,
+        steps=data.steps, 
+        is_public=data.is_public,
+        time=data.time,
+        difficulty=data.difficulty,
+        user_id=user.id
+    )
+    tags = db.query(Tag).filter(Tag.id.in_(data.tag_ids)).all()
+    recipe.tags = tags
+
+    # save db
+    db.add(recipe)
+    db.commit()
+    db.refresh(recipe)
+
+    return recipe
+
+
+@app.patch("/recipes/{recipe_id}", response_model=RecipeResponse)
+def update_recipe_partial(
+    recipe_id: int,
+    data: RecipeUpdate,
+    db: Session = Depends(get_db),
+    current_username: str = Depends(get_current_user)
+):
+    recipe = db.query(Recipe).filter(Recipe.id == recipe_id).first()
+
+    if not recipe:
+        raise HTTPException(status_code=404, detail="Recipe not found")
+
+    user = db.query(User).filter(User.username == current_username).first()
+    if not user or recipe.user_id != user.id:
+        raise HTTPException(status_code=403, detail="Not allowed")
+
+    update_data = data.model_dump(exclude_unset=True)
+
+    for key, value in update_data.items():
+        setattr(recipe, key, value)
+
+    db.commit()
+    db.refresh(recipe)
+
+    return recipe
+
+@app.delete("/recipes/{recipe_id}", status_code=204)
+def delete_recipe(
+    recipe_id: int,
+    db: Session = Depends(get_db),
+    current_username: str = Depends(get_current_user)
+):
+    recipe = db.query(Recipe).filter(Recipe.id == recipe_id).first()
+
+    if not recipe:
+        raise HTTPException(status_code=404, detail="Recipe not found")
+
+    user = db.query(User).filter(User.username == current_username).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if recipe.user_id != user.id:
+        raise HTTPException(status_code=403, detail="Not allowed")
+
+    db.delete(recipe)
+    db.commit()
+
+    return None
+
+# ratings
+@app.post("/recipes/{recipe_id}/ratings", response_model=RatingResponse)
+def rate_recipe(
+    recipe_id: int,
+    data: RatingCreate,
+    db: Session = Depends(get_db)):
+    recipe = db.query(Recipe).filter(Recipe.id == recipe_id).first()
+
+    if not recipe:
+        raise HTTPException(status_code=404, detail="Recipe not found")
+
+    current_username: str = Depends(get_current_user)
+    user = db.query(User).filter(User.username == current_username).first()
+    
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    existing = db.query(Rating).filter(
+        Rating.user_id == user.id,
+        Rating.recipe_id == recipe_id
+        ).first()
+
+    if existing:
+        existing.rating = data.rating
+        db.commit()
+        db.refresh(existing)
+        return existing
+
+    rating = Rating(
+        user_id=user.id,
+        recipe_id=recipe_id,
+        rating=data.rating
+    )
+
+    db.add(rating)
+    db.commit()
+    db.refresh(rating)
+
+    return rating
+
+
+#tags
+
+@app.post("/tags", response_model=TagResponse)
+def create_tag(data: TagCreate, db: Session = Depends(get_db)):
+    existing = db.query(Tag).filter(Tag.name == data.name).first()
+
+    if existing:
+        raise HTTPException(status_code=400, detail="Tag exists already")
+
+    tag = Tag(name=data.name)
+
+    db.add(tag)
+    db.commit()
+    db.refresh(tag)
+
+    return tag
+
+@app.get("/tags", response_model=list[TagResponse])
+def get_tags(db: Session = Depends(get_db)):
+    return db.query(Tag).all()
+
