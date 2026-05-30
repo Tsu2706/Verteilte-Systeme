@@ -328,7 +328,10 @@ def rate_recipe(
 
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-
+    
+    if not recipe.is_public and recipe.user_id != user.id:
+        raise HTTPException(status_code=403, detail="Not allowed")
+    
     existing = db.query(Rating).filter(
         Rating.user_id == user.id,
         Rating.recipe_id == recipe_id
