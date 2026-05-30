@@ -46,7 +46,7 @@ graph TD
   SvelteKit -- "HTTP REST" --> FastAPI
   FastAPI -- "SQL (PyMySQL)" --> MySQL
 ```
-### Projektstruktur
+### Projektstruktur:
 ```
 smartcookies/
 ├── docker-compose.yml          # Orchestrierung aller 3 Container
@@ -94,8 +94,8 @@ smartcookies/
 * Stoppbefehl: `docker compose down`
 
 ### Erreichbarkeiten im Browser 
-* Forontend: `http://localhost:5173`
-* Backende: `http://localhost:8000/docs`
+* Frontend: `http://localhost:5173`
+* Backend: `http://localhost:8000/docs`
 
 ## Arbeitsnachweis – Aufgabenverteilung
 
