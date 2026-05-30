@@ -88,12 +88,12 @@ smartcookies/
                     └── +page.svelte        # /recipes/[id] → Detailansicht
 ```
 ## Quickstart
-*Startbefehl: 'docker compose up -d --build'
-*Stoppbefehl: 'docker compose down'
+* Startbefehl: 'docker compose up -d --build'
+* Stoppbefehl: 'docker compose down'
 
 ### Erreichbarkeiten im Browser 
-*Forontend: 'http://localhost:5173'
-Backende: 'http://localhost:8000/docs'
+* Forontend: 'http://localhost:5173'
+* Backende: 'http://localhost:8000/docs'
 
 ## Arbeitsnachweis – Aufgabenverteilung
 
