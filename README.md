@@ -102,7 +102,7 @@ smartcookies/
 | Teammitglied    | Bereich              | Aufgaben                                                                 |
 |-----------------|----------------------|--------------------------------------------------------------------------|
 | Michèle Plocher | Frontend             | SvelteKit – alle Seiten & Komponenten, UI-Design & Styling, Routing & Navigation, Formulare (Login, Register, Rezept erstellen), Rezeptübersicht & Detailansicht |
-| Melissa Kindler | Backend, Auth, Testing | FastAPI-Backend – Aufbau & Struktur, JWT-Authentifizierung & Argon2-Hashing, API und Frontend-Verknüpfung, Fehlerbehandlung & Fehlerbehebung, Testing |
+| Melissa Kindler | Backend, Authentifizierung, Testing | FastAPI-Backend – Aufbau & Struktur, JWT-Authentifizierung & Argon2-Hashing, API und Frontend-Verknüpfung, Fehlerbehandlung & Fehlerbehebung, Testing |
 | Rahel Stein     | Datenbank, Backend  | Datenbankmodell & SQLAlchemy-Modelle, MySQL-Schema & Beziehungen, m:n Tagging-System (recipe_tags), Backend-Endpoints (Rezepte, Tags, Ratings)|
 | Philipp Här     | Dokumentation, Testing  | README – Aufbau & Dokumentation, Architekturdiagramm (Mermaid), Testing |
 
