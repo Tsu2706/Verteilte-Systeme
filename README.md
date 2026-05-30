@@ -57,26 +57,45 @@ docker compose up -d --build
 
 
 ## Projektstruktur
-noch Anpassen
 ```
-projekt-template/
-├── backend/
-│   ├── main.py          # FastAPI-App (Endpoints)
-│   ├── auth.py          # JWT + Argon2 Passwort-Hashing
-│   ├── database.py      # SQLAlchemy Engine + Session
-│   ├── models.py        # ORM-Modelle (User + eure Tabellen)
-│   ├── schemas.py       # Pydantic-Schemas (Request/Response)
-│   ├── requirements.txt # Python-Abhängigkeiten
-│   └── Dockerfile       # Bauanleitung für Backend-Container
-├── frontend/
-│   ├── src/
-│   │   ├── lib/api.ts          # API-Hilfsfunktionen (login, fetch...)
-│   │   └── routes/+page.svelte # Startseite
-│   ├── package.json            # NodeJS-Abhängigkeiten
-│   └── Dockerfile              # Bauanleitung für Frontend-Container
-├── docker-compose.yml          # Orchestrierung aller Container
+smartcookies/
+├── docker-compose.yml          # Orchestrierung aller 3 Container
 ├── .env.example                # Vorlage für Umgebungsvariablen
-└── .gitignore                  # Git-Ignore-Datei
+├── .gitignore
+│
+├── backend/
+│   ├── Dockerfile              # Bauanleitung Backend-Container
+│   ├── requirements.txt        # Python-Abhängigkeiten (FastAPI, SQLAlchemy, …)
+│   ├── main.py                 # FastAPI-App & alle API-Endpunkte
+│   ├── auth.py                 # JWT-Erstellung & Validierung, Argon2-Hashing
+│   ├── database.py             # SQLAlchemy Engine, Session, Base
+│   ├── models.py               # ORM-Modelle: User, Recipe, Tag, Rating, recipe_tags
+│   └── schemas.py              # Pydantic-Schemas für Request & Response
+│
+└── frontend/
+    ├── Dockerfile              # Bauanleitung Frontend-Container
+    ├── package.json            # Node.js-Abhängigkeiten (SvelteKit, Vite, …)
+    ├── svelte.config.js        # SvelteKit-Konfiguration (Adapter, Runes-Mode)
+    ├── vite.config.ts          # Vite-Konfiguration
+    ├── tsconfig.json           # TypeScript-Konfiguration
+    └── src/
+        ├── app.html            # HTML-Shell (SvelteKit-Einstiegspunkt)
+        ├── app.d.ts            # TypeScript-Typen für SvelteKit
+        ├── lib/
+        │   └── api.ts          # Alle API-Hilfsfunktionen (login, register, fetch…)
+        └── routes/
+            ├── +layout.svelte              # Globales Layout (alle Seiten)
+            ├── +page.svelte                # / → Startseite (Landingpage)
+            ├── login/
+            │   └── +page.svelte            # /login → Login-Seite
+            ├── register/
+            │   └── +page.svelte            # /register → Registrierung
+            └── recipes/
+                ├── +page.svelte            # /recipes → Übersicht & Suche
+                ├── create/
+                │   └── +page.svelte        # /recipes/create → Rezept erstellen
+                └── [id]/
+                    └── +page.svelte        # /recipes/[id] → Detailansicht
 ```
 
 
