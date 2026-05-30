@@ -357,27 +357,6 @@ def rate_recipe(
     return rating
 
 
-    if not tag:
-        raise HTTPException(status_code=404, detail="Tag not found")
-
-    user = db.query(User).filter(
-        User.username == current_username
-    ).first()
-
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    if tag.creator_id != user.id:
-        raise HTTPException(
-            status_code=403,
-            detail="Nur der Ersteller darf diesen Tag löschen"
-        )
-
-    db.delete(tag)
-    db.commit()
-
-    return None
-
 
 @app.get("/recipes/{recipe_id}/ratings")
 def get_recipe_ratings(
