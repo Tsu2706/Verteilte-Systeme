@@ -87,6 +87,14 @@ smartcookies/
                 └── [id]/
                     └── +page.svelte        # /recipes/[id] → Detailansicht
 ```
+## Quickstart
+*Startbefehl: 'docker compose up -d --build'
+*Stoppbefehl: 'docker compose down'
+
+### Erreichbarkeiten im Browser 
+*Forontend: 'http://localhost:5173'
+Backende: 'http://localhost:8000/docs'
+
 ## Arbeitsnachweis – Aufgabenverteilung
 
 | Teammitglied    | Bereich              | Aufgaben                                                                 |
@@ -96,13 +104,7 @@ smartcookies/
 | Rahel Stein     | Datenbank, Backend  | Datenbankmodell & SQLAlchemy-Modelle, MySQL-Schema & Beziehungen, m:n Tagging-System (recipe_tags), Backend-Endpoints (Rezepte, Tags, Ratings)|
 | Philipp Här     | Doku, Testing  | README – Aufbau & Dokumentation, Architekturdiagramm (Mermaid), Testing |
 
-## Quickstart
-Startbefehl: 'docker compose up -d --build'
-Stoppbefehl: 'docker compose down'
 
-### Erreichbarkeiten im Browser 
-Forontend: 'http://localhost:5173'
-Backende: 'http://localhost:8000/docs'
 
 
 
