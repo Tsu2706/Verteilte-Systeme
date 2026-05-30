@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-
+from pydantic import Field
 
 # --- Auth-Schemas ---
 
@@ -51,7 +51,6 @@ class RecipeCreate(BaseModel):
     ingredients: list[str]  
     steps: list[str]  
     is_public: bool = True
-    tag_ids: list[int] = []
     time: str | None = None
     difficulty: str | None = None
     tag_ids: list[int] | None = None
@@ -84,7 +83,7 @@ class RecipeUpdate(BaseModel):
 
 # rating
 class RatingCreate(BaseModel):
-    rating: int
+    rating: int = Field(ge=1, le=5)
 
 class RatingResponse(BaseModel):
     id: int
