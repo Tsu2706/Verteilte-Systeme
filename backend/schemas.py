@@ -28,6 +28,7 @@ class TagCreate(BaseModel):
 class TagResponse(BaseModel):
     id: int
     name: str
+    creator_id: int
 
     model_config = {"from_attributes": True}
 

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { browser } from "$app/environment";
-  import { createRecipe, getTags, createTag, deleteTag, type Tag } from "$lib/api";
+  import { createRecipe, getTags, getMe, createTag, deleteTag, type Tag, type User } from "$lib/api";
 
   let title = $state("");
   let description = $state("");
@@ -9,6 +9,8 @@
   let ingredientsText = $state("");
   let stepsText = $state("");
   let isPublic = $state(true);
+
+  let currentUser = $state<User | null>(null);
 
   let tags = $state<Tag[]>([]);
   let selectedTagIds = $state<number[]>([]);
@@ -30,6 +32,7 @@
 
   async function loadTags() {
     try {
+      currentUser = await getMe();
       tags = await getTags();
     } catch {
       tags = [];
@@ -166,7 +169,7 @@
                 >
                   {tag.name}
                 </button>
-
+                {#if currentUser && tag.creator_id === currentUser.id}
                 <button
                   type="button"
                   class="tag-delete-button"
@@ -175,6 +178,7 @@
                 >
                   ×
                 </button>
+                {/if}
               </div>
             {/each}
           </div>
