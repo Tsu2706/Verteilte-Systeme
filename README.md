@@ -82,10 +82,12 @@ smartcookies/
             │   └── +page.svelte            # /register → Registrierung
             └── recipes/
                 ├── +page.svelte            # /recipes → Übersicht & Suche
-                ├── create/
+                ├── new/
                 │   └── +page.svelte        # /recipes/create → Rezept erstellen
                 └── [id]/
-                    └── +page.svelte        # /recipes/[id] → Detailansicht
+                    |── +page.svelte        # /recipes/[id] → Detailansicht
+                    └── edit/
+                        └── +page.svelte    # /recipes/[id]/edit → Rezept bearbeiten
 ```
 ## Quickstart
 * Startbefehl: `docker compose up -d --build`
