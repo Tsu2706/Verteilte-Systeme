@@ -41,6 +41,7 @@ export type Rating = {
 export type RatingSummary = {
   average: number;
   count: number;
+  my_rating: number | null;
 };
 
 export type User = {

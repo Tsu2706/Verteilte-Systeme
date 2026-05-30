@@ -15,6 +15,7 @@ from schemas import (
     RecipeUpdate,
     RatingCreate,
     RatingResponse,
+    RatingSummary,
     TagCreate,
     TagResponse,
 )
@@ -231,7 +232,7 @@ def create_recipe(
         user_id=user.id,
     )
 
-    tags = db.query(Tag).filter(Tag.id.in_(data.tag_ids)).all()
+    tags = db.query(Tag).filter(Tag.id.in_(data.tag_ids or [])).all()
     recipe.tags = tags
 
     db.add(recipe)
@@ -272,7 +273,6 @@ def update_recipe_partial(
         raise HTTPException(status_code=403, detail="Not allowed")
 
     update_data = data.model_dump(exclude_unset=True)
-
     tag_ids = update_data.pop("tag_ids", None)
 
     for key, value in update_data.items():
@@ -329,10 +329,10 @@ def rate_recipe(
 
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    
+
     if not recipe.is_public and recipe.user_id != user.id:
         raise HTTPException(status_code=403, detail="Not allowed")
-    
+
     existing = db.query(Rating).filter(
         Rating.user_id == user.id,
         Rating.recipe_id == recipe_id
@@ -356,27 +356,12 @@ def rate_recipe(
 
     return rating
 
-@app.delete("/tags/{tag_id}", status_code=204)
-def delete_tag(
-    tag_id: int,
-    db: Session = Depends(get_db),
-    current_username: str = Depends(get_current_user),
-):
-    tag = db.query(Tag).filter(Tag.id == tag_id).first()
 
-    if not tag:
-        raise HTTPException(status_code=404, detail="Tag not found")
-
-    db.delete(tag)
-    db.commit()
-
-    return None
-
-
-@app.get("/recipes/{recipe_id}/ratings")
+@app.get("/recipes/{recipe_id}/ratings", response_model=RatingSummary)
 def get_recipe_ratings(
     recipe_id: int,
     db: Session = Depends(get_db),
+    current_username: str | None = Depends(get_current_user_optional),
 ):
     recipe = db.query(Recipe).filter(Recipe.id == recipe_id).first()
 
@@ -385,17 +370,30 @@ def get_recipe_ratings(
 
     ratings = db.query(Rating).filter(Rating.recipe_id == recipe_id).all()
 
-    if not ratings:
-        return {
-            "average": 0,
-            "count": 0
-        }
+    count = len(ratings)
+    average = 0.0
 
-    average = sum(r.rating for r in ratings) / len(ratings)
+    if count > 0:
+        average = round(sum(r.rating for r in ratings) / count, 1)
+
+    my_rating = None
+
+    if current_username:
+        user = db.query(User).filter(User.username == current_username).first()
+
+        if user:
+            own_rating = db.query(Rating).filter(
+                Rating.recipe_id == recipe_id,
+                Rating.user_id == user.id
+            ).first()
+
+            if own_rating:
+                my_rating = own_rating.rating
 
     return {
-        "average": round(average, 1),
-        "count": len(ratings)
+        "average": average,
+        "count": count,
+        "my_rating": my_rating
     }
 
 
@@ -418,3 +416,20 @@ def create_tag(data: TagCreate, db: Session = Depends(get_db)):
 @app.get("/tags", response_model=list[TagResponse])
 def get_tags(db: Session = Depends(get_db)):
     return db.query(Tag).all()
+
+
+@app.delete("/tags/{tag_id}", status_code=204)
+def delete_tag(
+    tag_id: int,
+    db: Session = Depends(get_db),
+    current_username: str = Depends(get_current_user),
+):
+    tag = db.query(Tag).filter(Tag.id == tag_id).first()
+
+    if not tag:
+        raise HTTPException(status_code=404, detail="Tag not found")
+
+    db.delete(tag)
+    db.commit()
+
+    return None

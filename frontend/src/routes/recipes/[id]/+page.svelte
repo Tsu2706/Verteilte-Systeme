@@ -1,24 +1,65 @@
 <script lang="ts">
   import { browser } from "$app/environment";
   import { page } from "$app/stores";
-  import { getRecipe, deleteRecipe, rateRecipe, type Recipe } from "$lib/api";
+  import {
+    getRecipe,
+    deleteRecipe,
+    rateRecipe,
+    getRecipeRatings,
+    getMe,
+    type Recipe,
+    type RatingSummary,
+    type User
+  } from "$lib/api";
 
   let recipe = $state<Recipe | null>(null);
+  let currentUser = $state<User | null>(null);
+
   let loading = $state(true);
   let error = $state("");
   let isLoggedIn = $state(false);
+  let canManageRecipe = $state(false);
 
   let selectedRating = $state(0);
   let ratingMessage = $state("");
   let ratingError = $state("");
+
+  let ratingSummary = $state<RatingSummary>({
+    average: 0,
+    count: 0,
+    my_rating: null
+  });
+
+  async function loadRatings() {
+    if (!recipe) return;
+
+    ratingSummary = await getRecipeRatings(recipe.id);
+    selectedRating = ratingSummary.my_rating ?? 0;
+  }
 
   async function loadRecipe() {
     loading = true;
     error = "";
 
     try {
+      isLoggedIn = !!localStorage.getItem("token");
+
+      if (isLoggedIn) {
+        try {
+          currentUser = await getMe();
+        } catch {
+          currentUser = null;
+          isLoggedIn = false;
+          localStorage.removeItem("token");
+        }
+      }
+
       const id = Number($page.params.id);
       recipe = await getRecipe(id);
+
+      canManageRecipe = !!currentUser && recipe.user_id === currentUser.id;
+
+      await loadRatings();
     } catch (err) {
       error = err instanceof Error ? err.message : "Rezept konnte nicht geladen werden.";
     } finally {
@@ -27,7 +68,7 @@
   }
 
   async function handleDelete() {
-    if (!recipe) return;
+    if (!recipe || !canManageRecipe) return;
 
     const confirmed = confirm("Möchtest du dieses Rezept wirklich löschen?");
     if (!confirmed) return;
@@ -49,6 +90,7 @@
 
     try {
       await rateRecipe(recipe.id, value);
+      await loadRatings();
       ratingMessage = `Danke! Du hast dieses Rezept mit ${value} von 5 Sternen bewertet.`;
     } catch (err) {
       ratingError = err instanceof Error ? err.message : "Bewertung konnte nicht gespeichert werden.";
@@ -57,7 +99,6 @@
 
   $effect(() => {
     if (browser) {
-      isLoggedIn = !!localStorage.getItem("token");
       loadRecipe();
     }
   });
@@ -82,7 +123,7 @@
           <h1>{recipe.title}</h1>
         </div>
 
-        {#if isLoggedIn}
+        {#if canManageRecipe}
           <div class="actions">
             <a href={`/recipes/${recipe.id}/edit`} class="edit-button">Bearbeiten</a>
             <button onclick={handleDelete} class="delete-button">Löschen</button>
@@ -105,6 +146,15 @@
 
       <section class="rating-section">
         <h2>Bewertung</h2>
+
+        <p class="rating-text">
+          Durchschnitt: {ratingSummary.average} von 5 Sternen
+          ({ratingSummary.count} Bewertung{ratingSummary.count === 1 ? "" : "en"})
+        </p>
+
+        {#if selectedRating > 0}
+          <p class="rating-text">Deine Bewertung: {selectedRating} von 5 Sternen</p>
+        {/if}
 
         {#if isLoggedIn}
           <p class="rating-text">Wie gefällt dir dieses Rezept?</p>
