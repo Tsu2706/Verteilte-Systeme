@@ -307,6 +307,7 @@ def delete_recipe(
     if recipe.user_id != user.id:
         raise HTTPException(status_code=403, detail="Not allowed")
 
+    db.query(Rating).filter(Rating.recipe_id == recipe_id).delete()
     db.delete(recipe)
     db.commit()
 
