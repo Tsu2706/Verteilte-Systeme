@@ -45,6 +45,8 @@ class Tag(Base):
 
     id=Column(Integer,primary_key=True,index=True)
     name=Column(String(50),unique=True,nullable=False)
+    creator_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+
     recipes = relationship("Recipe", secondary=recipe_tags, back_populates="tags")
 
 

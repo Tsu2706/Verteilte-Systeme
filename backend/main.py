@@ -357,7 +357,29 @@ def rate_recipe(
     return rating
 
 
-@app.get("/recipes/{recipe_id}/ratings", response_model=RatingSummary)
+    if not tag:
+        raise HTTPException(status_code=404, detail="Tag not found")
+
+    user = db.query(User).filter(
+        User.username == current_username
+    ).first()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if tag.creator_id != user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="Nur der Ersteller darf diesen Tag löschen"
+        )
+
+    db.delete(tag)
+    db.commit()
+
+    return None
+
+
+@app.get("/recipes/{recipe_id}/ratings")
 def get_recipe_ratings(
     recipe_id: int,
     db: Session = Depends(get_db),
@@ -398,20 +420,33 @@ def get_recipe_ratings(
 
 
 @app.post("/tags", response_model=TagResponse)
-def create_tag(data: TagCreate, db: Session = Depends(get_db)):
+def create_tag(
+    data: TagCreate,
+    db: Session = Depends(get_db),
+    current_username: str = Depends(get_current_user),
+):
+    user = db.query(User).filter(
+        User.username == current_username
+    ).first()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
     existing = db.query(Tag).filter(Tag.name == data.name).first()
 
     if existing:
         raise HTTPException(status_code=400, detail="Tag exists already")
 
-    tag = Tag(name=data.name)
+    tag = Tag(
+        name=data.name,
+        creator_id=user.id
+    )
 
     db.add(tag)
     db.commit()
     db.refresh(tag)
 
     return tag
-
 
 @app.get("/tags", response_model=list[TagResponse])
 def get_tags(db: Session = Depends(get_db)):
@@ -428,6 +463,19 @@ def delete_tag(
 
     if not tag:
         raise HTTPException(status_code=404, detail="Tag not found")
+
+    user = db.query(User).filter(
+        User.username == current_username
+    ).first()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if tag.creator_id != user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="Nur der Ersteller darf diesen Tag löschen"
+        )
 
     db.delete(tag)
     db.commit()
