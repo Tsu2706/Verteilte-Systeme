@@ -46,23 +46,7 @@ graph TD
   SvelteKit -- "HTTP REST" --> FastAPI
   FastAPI -- "SQL (PyMySQL)" --> MySQL
 ```
-
-## Arbeitsnachweis – Aufgabenverteilung
-
-| Teammitglied    | Bereich              | Aufgaben                                                                 |
-|-----------------|----------------------|--------------------------------------------------------------------------|
-| Michèle Plocher | Frontend             | SvelteKit – alle Seiten & Komponenten, UI-Design & Styling, Routing & Navigation, Formulare (Login, Register, Rezept erstellen), Rezeptübersicht & Detailansicht |
-| Melissa Kindler | Backend, Auth, Testing | FastAPI-Backend – Aufbau & Struktur, JWT-Authentifizierung & Argon2-Hashing, API und Frontend-Verknüpfung, Fehlerbehandlung & Fehlerbehebung, Testing |
-| Rahel Stein     | Datenbank, Backend  | Datenbankmodell & SQLAlchemy-Modelle, MySQL-Schema & Beziehungen, m:n Tagging-System (recipe_tags), Backend-Endpoints (Rezepte, Tags, Ratings)|
-| Philipp Här     | Doku, Testing  | README – Aufbau & Dokumentation, Architekturdiagramm (Mermaid), Testing |
-
-## Quickstart
-
-docker compose up -d --build
-
-
-
-## Projektstruktur
+### Projektstruktur
 ```
 smartcookies/
 ├── docker-compose.yml          # Orchestrierung aller 3 Container
@@ -103,6 +87,23 @@ smartcookies/
                 └── [id]/
                     └── +page.svelte        # /recipes/[id] → Detailansicht
 ```
+## Arbeitsnachweis – Aufgabenverteilung
+
+| Teammitglied    | Bereich              | Aufgaben                                                                 |
+|-----------------|----------------------|--------------------------------------------------------------------------|
+| Michèle Plocher | Frontend             | SvelteKit – alle Seiten & Komponenten, UI-Design & Styling, Routing & Navigation, Formulare (Login, Register, Rezept erstellen), Rezeptübersicht & Detailansicht |
+| Melissa Kindler | Backend, Auth, Testing | FastAPI-Backend – Aufbau & Struktur, JWT-Authentifizierung & Argon2-Hashing, API und Frontend-Verknüpfung, Fehlerbehandlung & Fehlerbehebung, Testing |
+| Rahel Stein     | Datenbank, Backend  | Datenbankmodell & SQLAlchemy-Modelle, MySQL-Schema & Beziehungen, m:n Tagging-System (recipe_tags), Backend-Endpoints (Rezepte, Tags, Ratings)|
+| Philipp Här     | Doku, Testing  | README – Aufbau & Dokumentation, Architekturdiagramm (Mermaid), Testing |
+
+## Quickstart
+Startbefehl: 'docker compose up -d --build'
+Stoppbefehl: 'docker compose down'
+
+### Erreichbarkeiten im Browser 
+Forontend: 'http://localhost:5173'
+Backende: 'http://localhost:8000/docs'
+
 
 
 
